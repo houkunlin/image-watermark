@@ -243,7 +243,6 @@ class CanvasConfig {
   }
 
   public async render(fillStyle: string = '#fff', logoImage: HTMLImageElement | null, texts: TextConfigType[] = [], imageExifInfo: ImageExifInfo) {
-    console.log(this.ready, this.el);
     if (!this.ready) {
       return;
     }
@@ -368,14 +367,15 @@ const HomePage: React.FC = () => {
     });
   }, [image]);
   const saveImage = useCallback((ext: string = 'jpg', quality: any | null = null) => {
+    const filename = imageFilename.substring(0, imageFilename.lastIndexOf('.'));
     setLoading(true);
     const fileType: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', };
     const canvas = canvasRef.current!;
     canvas.toBlob(blob => {
-      downloadBlob(blob!, `${imageFilename}-相机水印.${ext}`);
+      downloadBlob(blob!, `${filename}-photo-watermark.${ext}`);
       setLoading(false);
     }, fileType[ext], quality);
-  }, []);
+  }, [imageFilename]);
 
   const loadImageFile = useCallback((file: UploadFile, callback: (image: HTMLImageElement) => void) => {
     setLoading(true);
@@ -464,6 +464,7 @@ const HomePage: React.FC = () => {
             <ProDescriptions title="照片信息" dataSource={canvasConfig.image} column={4} columns={[
               { title: '宽度', dataIndex: 'width', },
               { title: '高度', dataIndex: 'height', },
+              { title: '文件名', dataIndex: 'height', render: () => imageFilename },
             ]} />
             <ProDescriptions title="画布" dataSource={canvasConfig.canvas} column={4} columns={[
               { title: '宽度', dataIndex: 'width', },
@@ -477,6 +478,17 @@ const HomePage: React.FC = () => {
             ]} />
           </Col>
         </Row>
+        <Dropdown.Button
+          overlay={<Menu
+            onClick={(info: any) => saveImage(info.key)}
+            items={[
+              { label: 'JPG', key: 'jpg', icon: <FileImageOutlined />, },
+              { label: 'PNG', key: 'png', icon: <FileImageOutlined />, },
+            ]}
+          />}
+          onClick={() => saveImage('jpg')}
+          style={{ marginBottom: 15 }}
+        >保存图片 ( JPG )</Dropdown.Button>
         <div className={styles.canvasBox}>
           <canvas ref={canvasRef}></canvas>
         </div>
