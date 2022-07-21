@@ -469,7 +469,7 @@ const HomePage: React.FC = () => {
               { title: '宽度', dataIndex: 'width', },
               { title: '高度', dataIndex: 'height', },
             ]} />
-            <ProDescriptions title="边框" dataSource={canvasConfig.border} column={4} columns={[
+            <ProDescriptions title="边框宽度" dataSource={canvasConfig.border} column={4} columns={[
               { title: '左边', dataIndex: 'left', },
               { title: '顶边', dataIndex: 'top', },
               { title: '右边', dataIndex: 'right', },
