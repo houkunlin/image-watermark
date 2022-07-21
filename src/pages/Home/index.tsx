@@ -493,7 +493,9 @@ const HomePage: React.FC = () => {
               { label: 'PNG', key: 'png', icon: <FileImageOutlined />, },
             ]}
           />}
-          onClick={() => saveImage('jpg')}>保存图片 ( JPG )</Dropdown.Button>
+          onClick={() => saveImage('jpg')}
+          style={{ marginBottom: 15 }}
+        >保存图片 ( JPG )</Dropdown.Button>
         <ProCard>
           <ProForm
             formRef={formRef}
