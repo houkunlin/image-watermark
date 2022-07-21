@@ -322,7 +322,7 @@ const HomePage: React.FC = () => {
         items: [
           {
             ...defaultText,
-            textTpl: '@{{版权}}',
+            textTpl: '©{{版权}}',
             x: Math.floor(image.width - 0.015 * image.width),
             y: image.height - Math.floor(0.015 * image.width * 2),
             bg: '#fff',
