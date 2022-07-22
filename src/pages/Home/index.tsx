@@ -440,6 +440,11 @@ const HomePage: React.FC = () => {
     <PageContainer>
       <Spin spinning={loading}>
         <Alert message="为保护用户隐私，图片不会上传到服务器，图片仅在本地浏览器进行处理" type="info" style={{ marginBottom: 15 }} />
+        {
+          (navigator.userAgent.includes('Weixin') || navigator.userAgent.includes('WeChat')) && (
+            <Alert message="微信浏览器无法保存图片，请点击右上角用浏览器访问" type="warning" style={{ marginBottom: 15 }} />
+          )
+        }
         <ProCard ghost>
           <CheckCard.Group value={logoImageSrc} options={logos} onChange={setLogoImageSrc} />
         </ProCard>
