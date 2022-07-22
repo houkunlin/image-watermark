@@ -60,9 +60,9 @@ const getFractionStr = (num: number | string | Number | any, after: string = '')
   }
   if (num.numerator != null && num.denominator != null) {
     if (num.denominator === 1) {
-      return `${num.numerator}s`;
+      return `${num.numerator}${after}`;
     } else {
-      return `${num.numerator}/${num.denominator}s`;
+      return `${num.numerator}/${num.denominator}${after}`;
     }
   }
   const re = math.fraction(`${num}`);
