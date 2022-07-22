@@ -297,7 +297,7 @@ const HomePage: React.FC = () => {
   }, { wait: 200 });
 
   const canvasConfig = useMemo(() => new CanvasConfig(image, canvasRef.current, {
-    borderPercentage: { left: 0, top: 0, right: 0, bottom: 0.0625 }
+    borderPercentage: { left: 0, top: 0, right: 0, bottom: 0.08 }
   }), [image]);
 
   const initCanvas = useCallback(async () => {
@@ -335,42 +335,58 @@ const HomePage: React.FC = () => {
           {
             ...defaultText,
             textTpl: '©{{版权}}',
-            x: Math.floor(image.width - 0.015 * image.width),
-            y: image.height - Math.floor(0.015 * image.width * 2),
+            x: Math.floor(image.width - image.width * 0.015),
+            y: image.height - Math.floor(image.width * 0.015),
             bg: '#fff',
+            fontSize: Math.floor(border.bottom * 0.30),
+            fontSizeUnit: 'px',
+            textBaseline: 'alphabetic',
             textAlign: 'right',
             fontWeight: 'bolder',
           },
           {
             ...defaultText,
             textTpl: '{{相机品牌}} {{相机型号}}',
-            x: Math.floor(0.015 * image.width),
-            y: Math.floor(0.20 * border.bottom) + image.height,
+            x: Math.floor(image.width * 0.015),
+            y: Math.floor(border.bottom * 0.20) + image.height,
+            fontSize: Math.floor(border.bottom * 0.30),
+            fontSizeUnit: 'px',
+            textBaseline: 'top',
+            textAlign: 'left',
             fontWeight: 'bolder',
           },
           {
             ...defaultText,
             textTpl: '{{拍摄时间}}',
-            x: Math.floor(0.015 * image.width),
-            y: Math.floor(0.60 * border.bottom) + image.height,
-            fontSize: 7
+            x: Math.floor(image.width * 0.015),
+            y: Math.floor(border.bottom * 0.60) + image.height,
+            fontSize: Math.floor(border.bottom * 0.25),
+            fontSizeUnit: 'px',
+            textBaseline: 'top',
+            textAlign: 'left',
+            fontWeight: 'normal',
           },
           {
             ...defaultText,
             textTpl: '{{镜头型号}}',
-            x: Math.floor(image.width - 0.015 * image.width),
-            y: Math.floor(0.20 * border.bottom) + image.height,
-            fontSize: 8,
+            x: Math.floor(image.width - image.width * 0.015),
+            y: Math.floor(border.bottom * 0.20) + image.height,
+            fontSize: Math.floor(border.bottom * 0.30),
+            fontSizeUnit: 'px',
+            textBaseline: 'top',
             textAlign: 'right',
             fontWeight: 'bolder',
           },
           {
             ...defaultText,
             textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
-            x: Math.floor(image.width - 0.015 * image.width),
-            y: Math.floor(0.60 * border.bottom) + image.height,
-            fontSize: 7,
+            x: Math.floor(image.width - image.width * 0.015),
+            y: Math.floor(border.bottom * 0.60) + image.height,
+            fontSize: Math.floor(border.bottom * 0.25),
+            fontSizeUnit: 'px',
+            textBaseline: 'top',
             textAlign: 'right',
+            fontWeight: 'normal',
           },
         ]
       };
