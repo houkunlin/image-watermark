@@ -28,6 +28,7 @@ import { UploadChangeParam } from "antd/lib/upload/interface";
 import { useDebounceFn } from 'ahooks';
 // @ts-ignore
 import { CheckGroupValueType } from "@ant-design/pro-card/lib/components/CheckCard/Group";
+import moment from "moment";
 
 // ImageExifInfo(相机品牌 = SONY, 相机型号 = ILCE-7RM3A, 镜头型号 = FE 24-105mm F4 G OSS, 版权 = houkunlin, 拍摄时间 = 2021-07-24 19:50:17, 光圈 = f/4, 快门 = 1/40 s, 焦距 = 105 mm, 感光度 = 1000 )
 // ImageExifInfo(相机品牌 = SONY, 相机型号 = ILCE-7RM3A, 镜头型号 = FE 24-105mm F4 G OSS, 版权 = houkunlin, 拍摄时间 = 2022-07-01 19:18:47, 光圈 = f/8, 快门 = 1/200 s, 焦距 = 105 mm, 感光度 = 200 )
@@ -53,9 +54,16 @@ type ImageExifInfo = {
   感光度: string;
 }
 
-const getFractionStr = (num: number | string | Number, after: string = '') => {
+const getFractionStr = (num: number | string | Number | any, after: string = '') => {
   if (num == null) {
     return '';
+  }
+  if (num.numerator != null && num.denominator != null) {
+    if (num.denominator === 1) {
+      return `${num.numerator}s`;
+    } else {
+      return `${num.numerator}/${num.denominator}s`;
+    }
   }
   const re = math.fraction(`${num}`);
   return `${re.n}/${re.d}${after}`;
@@ -72,17 +80,21 @@ const getExif = (img: any): Promise<ImageExifInfo> => {
   return new Promise((resolve, reject) => {
     exif.getData(img, () => {
       console.log('相机 exif', exif.getAllTags(img));
+      let dateTimeOriginal = getTagStr("DateTimeOriginal");
+      if (dateTimeOriginal != '' && dateTimeOriginal.length === 19) {
+        dateTimeOriginal = moment(dateTimeOriginal, 'YYYY:MM:DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+      }
       resolve({
         相机品牌: getTagStr("Make"),
         相机型号: getTagStr("Model"),
         镜头型号: getTagStr("undefined"),
         版权: getTagStr("Copyright"),
-        拍摄时间: getTagStr("DateTimeOriginal"),
+        拍摄时间: dateTimeOriginal,
         光圈: getTagStr("FNumber", 'f/'),
         快门: getFractionStr(exif.getTag(img, "ExposureTime"), 's'),
         焦距: getTagStr("FocalLength", '', 'mm'),
         感光度: getTagStr("ISOSpeedRatings"),
-      })
+      });
     });
   })
 };

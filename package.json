@@ -21,6 +21,7 @@
     "jsencrypt": "^3.2.1",
     "math.js": "^1.1.46",
     "mathjs": "^10.6.4",
+    "moment": "^2.29.4",
     "react-color": "^2.19.3"
   },
   "devDependencies": {
