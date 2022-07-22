@@ -316,14 +316,14 @@ const HomePage: React.FC = () => {
     }
     getExif(image).then(res => {
       setImageExifInfo(res);
-      switch (res.相机品牌) {
-        case 'SONY':
+      switch (res.相机品牌.toLowerCase()) {
+        case 'sony':
           setLogoImageSrc(logoSony);
           break;
-        case 'CANON':
+        case 'canon':
           setLogoImageSrc(logoCanon);
           break;
-        case 'NIKON':
+        case 'nikon':
           setLogoImageSrc(logoNikon);
           break;
       }
