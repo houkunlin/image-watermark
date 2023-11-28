@@ -203,15 +203,61 @@ export class CanvasConfig {
   }
 }
 
+/**
+ * 尝试把一个为10倍数的整数尽量缩小到100以内甚至10以内
+ * @param raw 原始数值
+ * @param xNum 10倍数的次数
+ * @return [number, number] 0: 缩小结果值，1: 除10的次数
+ */
+function mod10x(raw: number, xNum: number = 1) {
+  const modValue = Math.pow(10, xNum);
+  let result = raw;
+  let num = 0;
+  while (result % modValue === 0) {
+    num++;
+    result /= modValue;
+  }
+  // console.log('mod10x', raw, xNum, [result, num]);
+  return [result, num];
+}
+
 export function getFractionStr(num: number | string | Number | any, after: string = '') {
   if (num == null) {
     return '';
   }
+  // console.log('getFractionStr', num)
   if (num.numerator != null && num.denominator != null) {
+    // 分母为1，快慢速度为1s以上
     if (num.denominator === 1) {
       return `${num.numerator}${after}`;
-    } else {
+    }
+    // 分子为1，快慢速度为1s以下
+    if (num.numerator === 1) {
       return `${num.numerator}/${num.denominator}${after}`;
+    }
+    if (num.denominator === num.numerator) {
+      // 分子分母相等：快慢速度为1s
+      return `1${after}`;
+    }
+    // 有遇到快慢速度为 10/1250 或 100000/2500000 的快慢速度，需要把分子缩小，分子分母约分
+    if (num.numerator < num.denominator) {
+      // 分子小于分母：快慢速度为1s以下
+      // 分子：把分子先缩小
+      const fz = mod10x(num.numerator);
+      // 分母
+      const fm = mod10x(num.denominator, fz[1]);
+      return `${fz[0]}/${fm[0]}${after}`;
+    } else {
+      // 分子大于分母：快慢速度为1s以上
+      // 分母：把分母先缩小
+      const fm = mod10x(num.denominator);
+      // 分子
+      const fz = mod10x(num.numerator, fm[1]);
+      if (fm[0] === 1) {
+        // 分母为1：快慢速度为1s以上
+        return `${fz[0]}${after}`;
+      }
+      return `${fz[0]}/${fm[0]}${after}`;
     }
   }
   const re = math.fraction(`${num}`);
