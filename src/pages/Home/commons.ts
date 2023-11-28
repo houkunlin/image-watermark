@@ -59,7 +59,7 @@ export interface TextConfigType {
 
 export type ConfigType = {
   items: TextConfigType[];
-  bg: string;
+  bg: string | Color;
 }
 
 export class TextConfig implements TextConfigType {
