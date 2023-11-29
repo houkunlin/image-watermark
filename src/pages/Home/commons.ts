@@ -49,11 +49,11 @@ export interface Text {
   fontWeight: 'normal' | 'bold' | 'bolder' | 'lighter';
 }
 
-function getTextFontStr(text: Text) {
+export function getTextFontStr(text: Text) {
   return `${text.fontWeight} ${text.fontSize}${text.fontSizeUnit} Consolas`;
 }
 
-function getTextStr(text: Text, exifInfo: ExifInfo) {
+export function getTextStr(text: Text, exifInfo: ExifInfo) {
   try {
     return handlebars.compile(text.textTpl)(exifInfo)
   } catch (e) {
@@ -62,8 +62,20 @@ function getTextStr(text: Text, exifInfo: ExifInfo) {
 }
 
 export type ConfigType = {
-  items: TextConfig[];
+  // 文字列表
+  textItems: TextConfig[];
+  // 画布背景颜色
   background: string | Color;
+  /**
+   * 画布边框大小
+   * @description
+   */
+  border: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
 }
 
 export class TextConfig implements Text {
@@ -182,25 +194,25 @@ export class CanvasConfig {
     context.drawImage(logoImage, 0, 0, width, height, (this.image.width / 2 - newWidth / 2), (this.image.height + this.border.bottom * padding), newWidth, newHeight);
   }
 
-  public drawTexts(texts: TextConfig[], imageExifInfo: ExifInfo) {
+  public drawTexts(texts: TextConfig[], exifInfo: ExifInfo) {
     const context = this.el.context;
     for (let item of texts) {
       context.font = getTextFontStr(item);
       context.textAlign = item.textAlign;
       context.textBaseline = item.textBaseline;
       context.fillStyle = typeof item.color === 'string' ? item.color : item.color.toHexString();
-      context.fillText(getTextStr(item, imageExifInfo), item.x, item.y);
+      context.fillText(getTextStr(item, exifInfo), item.x, item.y);
     }
   }
 
-  public async render(fillStyle: string = '#fff', logoImage: HTMLImageElement | null, texts: TextConfig[] = [], imageExifInfo: ExifInfo) {
+  public async render(fillStyle: string = '#fff', logoImage: HTMLImageElement | null, texts: TextConfig[] = [], exifInfo: ExifInfo) {
     if (!this.ready) {
       return;
     }
     this.initCanvas(fillStyle);
     await this.drawImage();
     this.drawLogo(logoImage);
-    this.drawTexts(texts, imageExifInfo);
+    this.drawTexts(texts, exifInfo);
   }
 
   public print() {
@@ -210,6 +222,12 @@ export class CanvasConfig {
     边框：left=${this.border.left}, top=${this.border.top}, right=${this.border.right}, bottom=${this.border.bottom}
     边框比例：left=${this.borderPercentage.left}, top=${this.borderPercentage.top}, right=${this.borderPercentage.right}, bottom=${this.borderPercentage.bottom}
     `)
+  }
+
+  // 计算文字宽高
+  public measureText(text: TextConfig, exifInfo: ExifInfo) {
+    this.el.context.font = getTextFontStr(text);
+    return this.el.context.measureText(getTextStr(text, exifInfo));
   }
 }
 

@@ -18,7 +18,7 @@ import styles from './index.less';
 import logoSony from "@/assets/logo/Sony.svg";
 import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Col, Divider, Modal, Row, Space, Spin, Upload } from 'antd';
 import { downloadBlob } from '@/utils';
 import { DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
@@ -50,7 +50,7 @@ const HomePage: React.FC = () => {
   const { name } = useModel('global');
   const formRef = useRef<FormInstance>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [config, setConfig] = useState<ConfigType>({ items: [], background: '#fff' });
+  const [config, setConfig] = useState<ConfigType>({ textItems: [], background: '#fff', border: { left: 0, top: 0, right: 0, bottom: 0 } });
   const [loading1, setLoading1] = useState<boolean>(false);
   const configRef = useLatest<ConfigType>(config);
 
@@ -85,19 +85,17 @@ const HomePage: React.FC = () => {
       background = '#fff';
     }
     setLoading1(true);
-    canvasConfig.render(background, logoImage, config.items || [], exifInfo)
+    canvasConfig.render(background, logoImage, config.textItems || [], exifInfo)
       .finally(() => setLoading1(false))
   }, { wait: 100 });
 
   useEffect(() => {
     redoRender(logoImage, canvasConfig, config, exifInfo);
   }, [logoImage, canvasConfig, config, exifInfo]);
-
   useEffect(() => {
     if (isNil(exifInfo)) {
       return;
     }
-
     switch (exifInfo.相机品牌.toLowerCase()) {
       case 'sony':
         setLogoImage(logoSony);
@@ -109,11 +107,14 @@ const HomePage: React.FC = () => {
         setLogoImage(logoNikon);
         break;
     }
+  }, [exifInfo]);
+
+  useEffect(() => {
     const image = canvasConfig.image;
     const border = canvasConfig.border;
     const cfg: ConfigType = {
       ...configRef.current,
-      items: [
+      textItems: [
         new TextConfig({
           textTpl: '©{{版权}}',
           x: Math.floor(image.width - image.width * 0.015),
@@ -173,7 +174,7 @@ const HomePage: React.FC = () => {
     };
     formRef.current?.setFieldsValue?.(cfg);
     setConfig(cfg);
-  }, [canvasConfig.image, canvasConfig.border, exifInfo]);
+  }, [canvasConfig]);
 
   const saveImage = useCallback((ext: string = 'jpg', quality: any | null = null) => {
     const name = filename.substring(0, filename.lastIndexOf('.'));
@@ -320,7 +321,7 @@ const HomePage: React.FC = () => {
                     <Divider orientation={'left'}>画布</Divider>
                     <ProFormGroup>
                       <ProFormColorPicker
-                        name={'bg'}
+                        name={'background'}
                         label={'背景颜色'}
                         fieldProps={{
                           // @ts-ignore
@@ -328,10 +329,14 @@ const HomePage: React.FC = () => {
                           style: { display: 'inline-flex', width: "auto" },
                           format: 'hex',
                         }} />
+                      {/*<ProFormDigit name={['border', 'left']} label={'左边'} width={'xs'} addonAfter={'px'} />
+                      <ProFormDigit name={['border', 'top']} label={'顶边'} width={'xs'} addonAfter={'px'} />
+                      <ProFormDigit name={['border', 'right']} label={'右边'} width={'xs'} addonAfter={'px'} />
+                      <ProFormDigit name={['border', 'bottom']} label={'底边'} width={'xs'} addonAfter={'px'} />*/}
                     </ProFormGroup>
                     <Divider orientation={'left'}>文字</Divider>
                     <ProFormList<TextConfig>
-                      name={'items'}
+                      name={'textItems'}
                       creatorButtonProps={{ creatorButtonText: '添加文字', }}
                       creatorRecord={{ ...defaultText, }}
                     >
@@ -384,7 +389,7 @@ const HomePage: React.FC = () => {
                               label={'字体粗细'}
                               options={['normal', 'bold', 'bolder', 'lighter',]} />
                             <ProFormColorPicker
-                              name={'bg'}
+                              name={'color'}
                               label={'颜色'}
                               fieldProps={{
                                 // @ts-ignore
