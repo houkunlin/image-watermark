@@ -264,7 +264,7 @@ const HomePage: React.FC = () => {
               <Col span={24}>
                 <CheckCard.Group
                   options={logos}
-                  onChange={v => setLogoImage(`${v}`)}
+                  onChange={v => setLogoImage(v ? `${v}` : undefined)}
                   size={"small"} />
               </Col>
               <Col span={24} style={{ marginBottom: 20 }}>
