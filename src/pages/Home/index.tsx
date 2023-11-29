@@ -20,16 +20,15 @@ import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Col, Divider, Modal, Row, Space, Spin, Upload } from 'antd';
-import handlebars from 'handlebars';
 import { downloadBlob } from '@/utils';
 import { DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
 import { useDebounceFn, useLatest } from 'ahooks';
-import { CanvasConfig, clearCanvas, ConfigType, ImageExifInfo, TextConfigType } from "./commons";
+import { CanvasConfig, clearCanvas, ConfigType, ExifInfo, TextConfig } from "./commons";
 import { useImageWatermark } from "@/pages/ImageWatermark/hooks";
 import { isNil } from "lodash";
 
-const defaultText: TextConfigType = {
+const defaultText = new TextConfig({
   x: 100,
   y: 250,
   color: '#000',
@@ -39,18 +38,7 @@ const defaultText: TextConfigType = {
   textBaseline: 'top',
   textAlign: 'left',
   fontWeight: 'normal',
-  getFontStr: function () {
-    return `${this.fontWeight} ${this.fontSize}${this.fontSizeUnit} Consolas`;
-  },
-  getTextStr: function (imageExifInfo: ImageExifInfo) {
-    try {
-      return handlebars.compile(this.textTpl)(imageExifInfo)
-    } catch (e) {
-      return this.textTpl;
-    }
-  },
-  openDrawer: false,
-};
+});
 
 const logos = [
   { avatar: (<img alt={'索尼'} src={logoSony} style={{ width: '100%', height: '50px' }} />), value: logoSony, },
@@ -82,7 +70,7 @@ const HomePage: React.FC = () => {
     });
   }, [photoImage]);
 
-  const { run: redoRender } = useDebounceFn((logoImage: HTMLImageElement | null, canvasConfig: CanvasConfig, config: ConfigType, exifInfo: ImageExifInfo) => {
+  const { run: redoRender } = useDebounceFn((logoImage: HTMLImageElement | null, canvasConfig: CanvasConfig, config: ConfigType, exifInfo: ExifInfo) => {
     canvasConfig.print();
     const canvas = canvasRef.current;
     if (canvas == null) {
@@ -126,8 +114,7 @@ const HomePage: React.FC = () => {
     const cfg: ConfigType = {
       ...configRef.current,
       items: [
-        {
-          ...defaultText,
+        new TextConfig({
           textTpl: '©{{版权}}',
           x: Math.floor(image.width - image.width * 0.015),
           y: image.height - Math.floor(image.width * 0.015),
@@ -137,51 +124,51 @@ const HomePage: React.FC = () => {
           textBaseline: 'alphabetic',
           textAlign: 'right',
           fontWeight: 'bolder',
-        },
-        {
-          ...defaultText,
+        }),
+        new TextConfig({
           textTpl: '{{相机品牌}} {{相机型号}}',
           x: Math.floor(image.width * 0.015),
           y: Math.floor(border.bottom * 0.20) + image.height,
+          color: '#000',
           fontSize: Math.floor(border.bottom * 0.30),
           fontSizeUnit: 'px',
           textBaseline: 'top',
           textAlign: 'left',
           fontWeight: 'bolder',
-        },
-        {
-          ...defaultText,
+        }),
+        new TextConfig({
           textTpl: '{{拍摄时间}}',
           x: Math.floor(image.width * 0.015),
           y: Math.floor(border.bottom * 0.60) + image.height,
+          color: '#000',
           fontSize: Math.floor(border.bottom * 0.25),
           fontSizeUnit: 'px',
           textBaseline: 'top',
           textAlign: 'left',
           fontWeight: 'normal',
-        },
-        {
-          ...defaultText,
+        }),
+        new TextConfig({
           textTpl: '{{镜头型号}}',
           x: Math.floor(image.width - image.width * 0.015),
           y: Math.floor(border.bottom * 0.20) + image.height,
+          color: '#000',
           fontSize: Math.floor(border.bottom * 0.30),
           fontSizeUnit: 'px',
           textBaseline: 'top',
           textAlign: 'right',
           fontWeight: 'bolder',
-        },
-        {
-          ...defaultText,
+        }),
+        new TextConfig({
           textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
           x: Math.floor(image.width - image.width * 0.015),
           y: Math.floor(border.bottom * 0.60) + image.height,
+          color: '#000',
           fontSize: Math.floor(border.bottom * 0.25),
           fontSizeUnit: 'px',
           textBaseline: 'top',
           textAlign: 'right',
           fontWeight: 'normal',
-        },
+        }),
       ]
     };
     formRef.current?.setFieldsValue?.(cfg);
@@ -343,7 +330,7 @@ const HomePage: React.FC = () => {
                         }} />
                     </ProFormGroup>
                     <Divider orientation={'left'}>文字</Divider>
-                    <ProFormList<TextConfigType>
+                    <ProFormList<TextConfig>
                       name={'items'}
                       creatorButtonProps={{ creatorButtonText: '添加文字', }}
                       creatorRecord={{ ...defaultText, }}

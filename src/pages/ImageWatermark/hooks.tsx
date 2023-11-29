@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { getExif, ImageExifInfo } from "@/pages/Home/commons";
+import { ExifInfo, getExif } from "@/pages/Home/commons";
 import type { UploadFile } from "antd";
 import { isNil } from "lodash";
 import { useBoolean, useMemoizedFn } from "ahooks";
 
 type ImageType = string | HTMLImageElement | null | UploadFile;
 
-const defaultExifInfo: ImageExifInfo = {
+const defaultExifInfo: ExifInfo = {
   光圈: "", 快门: "", 感光度: "", 拍摄时间: "", 焦距: "", 版权: "", 相机品牌: "", 相机型号: "", 镜头型号: ""
 }
 
@@ -74,7 +74,7 @@ export function getImage(url: string | Blob) {
 
 export function useImageWatermark() {
   const [loading, { setTrue: startLoading, setFalse: stopLoading }] = useBoolean(false);
-  const [exifInfo, setExifInfo] = useState<ImageExifInfo>(() => ({ ...defaultExifInfo }));
+  const [exifInfo, setExifInfo] = useState<ExifInfo>(() => ({ ...defaultExifInfo }));
   const [photoImage, setPhotoImage] = useState<HTMLImageElement | null>(null);
   const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
   const [filename, setFilename] = useState<string>('保存图片');

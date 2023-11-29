@@ -7,7 +7,7 @@ import * as math from "mathjs";
 import exif from "exif-js";
 import moment from "moment/moment";
 
-export type ImageExifInfo = {
+export type ExifInfo = {
   // 相机品牌
   相机品牌: string;
   // 相机型号
@@ -30,54 +30,65 @@ export type ImageExifInfo = {
 
 export interface Text {
   // X 坐标
-  x: number,
+  x: number;
   // Y 坐标
-  y: number,
+  y: number;
   // 文字颜色
-  color: string | Color,
+  color: string | Color;
   // 文字大小
-  fontSize: number,
+  fontSize: number;
   // 文字大小单位
-  fontSizeUnit: 'em' | 'pt' | 'px' | 'rem' | 'in',
+  fontSizeUnit: 'em' | 'pt' | 'px' | 'rem' | 'in';
   // 文字模板内容
-  textTpl: string,
+  textTpl: string;
   // 文字基线
-  textBaseline: CanvasTextBaseline,
+  textBaseline: CanvasTextBaseline;
   // 文字对齐
-  textAlign: CanvasTextAlign,
+  textAlign: CanvasTextAlign;
   // 文字粗细
-  fontWeight: 'normal' | 'bold' | 'bolder' | 'lighter',
+  fontWeight: 'normal' | 'bold' | 'bolder' | 'lighter';
 }
 
-export interface TextConfigType extends Text {
-  // 文字字体内容
-  getFontStr: () => string,
-  // 文字目标内容渲染
-  getTextStr: (imageExifInfo: ImageExifInfo) => string,
-  // 是否显示弹窗配置
-  openDrawer: boolean,
+function getTextFontStr(text: Text) {
+  return `${text.fontWeight} ${text.fontSize}${text.fontSizeUnit} Consolas`;
 }
 
+function getTextStr(text: Text, exifInfo: ExifInfo) {
+  try {
+    return handlebars.compile(text.textTpl)(exifInfo)
+  } catch (e) {
+    return text.textTpl;
+  }
+}
 
 export type ConfigType = {
-  items: TextConfigType[];
+  items: TextConfig[];
   background: string | Color;
 }
 
-export class TextConfig implements TextConfigType {
+export class TextConfig implements Text {
+  // X 坐标
   x: number;
+  // Y 坐标
   y: number;
+  // 文字颜色
   color: string | Color;
+  // 文字大小
   fontSize: number;
+  // 文字大小单位
   fontSizeUnit: 'em' | 'pt' | 'px' | 'rem' | 'in';
+  // 文字模板内容
   textTpl: string;
+  // 文字基线
   textBaseline: CanvasTextBaseline;
+  // 文字对齐
   textAlign: CanvasTextAlign;
+  // 文字粗细
   fontWeight: 'normal' | 'bold' | 'bolder' | 'lighter';
-
+  // 是否显示弹窗配置
   openDrawer: boolean = false;
 
-  constructor(config: TextConfigType) {
+  constructor(config: Text) {
     this.x = config.x;
     this.y = config.y;
     this.color = config.color;
@@ -87,18 +98,7 @@ export class TextConfig implements TextConfigType {
     this.textBaseline = config.textBaseline;
     this.textAlign = config.textAlign;
     this.fontWeight = config.fontWeight;
-  }
-
-  public getFontStr() {
-    return `${this.fontWeight} ${this.fontSize}${this.fontSizeUnit} Consolas`;
-  }
-
-  public getTextStr(imageExifInfo: ImageExifInfo) {
-    try {
-      return handlebars.compile(this.textTpl)(imageExifInfo)
-    } catch (e) {
-      return this.textTpl;
-    }
+    this.openDrawer = false;
   }
 }
 
@@ -182,18 +182,18 @@ export class CanvasConfig {
     context.drawImage(logoImage, 0, 0, width, height, (this.image.width / 2 - newWidth / 2), (this.image.height + this.border.bottom * padding), newWidth, newHeight);
   }
 
-  public drawTexts(texts: TextConfigType[], imageExifInfo: ImageExifInfo) {
+  public drawTexts(texts: TextConfig[], imageExifInfo: ExifInfo) {
     const context = this.el.context;
     for (let item of texts) {
-      context.font = item.getFontStr();
+      context.font = getTextFontStr(item);
       context.textAlign = item.textAlign;
       context.textBaseline = item.textBaseline;
       context.fillStyle = typeof item.color === 'string' ? item.color : item.color.toHexString();
-      context.fillText(item.getTextStr(imageExifInfo), item.x, item.y);
+      context.fillText(getTextStr(item, imageExifInfo), item.x, item.y);
     }
   }
 
-  public async render(fillStyle: string = '#fff', logoImage: HTMLImageElement | null, texts: TextConfigType[] = [], imageExifInfo: ImageExifInfo) {
+  public async render(fillStyle: string = '#fff', logoImage: HTMLImageElement | null, texts: TextConfig[] = [], imageExifInfo: ExifInfo) {
     if (!this.ready) {
       return;
     }
@@ -274,7 +274,7 @@ export function getFractionStr(num: number | string | Number | any, after: strin
   return `${re.n}/${re.d}${after}`;
 }
 
-export function getExif(img: any): Promise<ImageExifInfo> {
+export function getExif(img: any): Promise<ExifInfo> {
   const getTagStr = (tag: string, before: string = '', after: string = ''): string => {
     const str = exif.getTag(img, tag);
     if (str == null) {
