@@ -19,16 +19,15 @@ import logoSony from "@/assets/logo/Sony.svg";
 import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Button, Col, Divider, Modal, Row, Space, Spin, Upload, UploadFile } from 'antd';
+import { Alert, Button, Col, Divider, Modal, Row, Space, Spin, Upload } from 'antd';
 import handlebars from 'handlebars';
 import { downloadBlob } from '@/utils';
 import { DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
-import { useDebounceFn } from 'ahooks';
-// @ts-ignore
-import { CheckGroupValueType } from "@ant-design/pro-card/lib/components/CheckCard/Group";
+import { useDebounceFn, useLatest } from 'ahooks';
+import { CanvasConfig, ConfigType, ImageExifInfo, TextConfigType } from "./commons";
+import { useImageWatermark } from "@/pages/ImageWatermark/hooks";
 import { isNil } from "lodash";
-import { CanvasConfig, ConfigType, getExif, ImageExifInfo, TextConfigType } from "./commons";
 
 const defaultText: TextConfigType = {
   x: 100,
@@ -53,10 +52,6 @@ const defaultText: TextConfigType = {
   openDrawer: false,
 };
 
-const defaultExifInfo: ImageExifInfo = {
-  光圈: "", 快门: "", 感光度: "", 拍摄时间: "", 焦距: "", 版权: "", 相机品牌: "", 相机型号: "", 镜头型号: ""
-}
-
 const logos = [
   { avatar: (<img alt={'索尼'} src={logoSony} style={{ width: '100%', height: '50px' }} />), value: logoSony, },
   { avatar: (<img alt="佳能" src={logoCanon} style={{ width: '100%', height: '50px' }} />), value: logoCanon, },
@@ -67,26 +62,24 @@ const HomePage: React.FC = () => {
   const { name } = useModel('global');
   const formRef = useRef<FormInstance>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
-  const [logoImageSrc, setLogoImageSrc] = useState<CheckGroupValueType>();
-  const [imageExifInfo, setImageExifInfo] = useState<ImageExifInfo>(defaultExifInfo);
   const [config, setConfig] = useState<ConfigType>({ items: [], bg: '#fff' });
-  const [imageFilename, setImageFilename] = useState<string>('保存图片');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading1, setLoading1] = useState<boolean>(false);
+  const configRef = useLatest<ConfigType>(config);
+
+  const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading2 } = useImageWatermark();
 
   const { run: setConfigDebounceFn } = useDebounceFn((changedValues, values) => {
     setConfig({ ...values });
   }, { wait: 200 });
 
-  const canvasConfig = useMemo(() => new CanvasConfig(image, canvasRef.current, {
+  const canvasConfig = useMemo(() => new CanvasConfig(photoImage, canvasRef.current, {
     borderPercentage: { left: 0, top: 0, right: 0, bottom: 0.08 }
-  }), [image]);
+  }), [photoImage]);
 
-  const initCanvas = useCallback(async () => {
+  useEffect(() => {
     canvasConfig.print();
     const canvas = canvasRef.current;
-    if (image == null || canvas == null) {
+    if (canvas == null) {
       return;
     }
     let bg;
@@ -97,139 +90,108 @@ const HomePage: React.FC = () => {
     } else {
       bg = '#fff';
     }
-    await canvasConfig.render(bg, logoImage, config.items || [], imageExifInfo);
-  }, [image, logoImage, canvasConfig, config.bg, config.items]);
+    canvasConfig.render(bg, logoImage, config.items || [], exifInfo);
+  }, [logoImage, canvasConfig, config, exifInfo]);
 
-
-  const loadExif = useCallback((image: HTMLImageElement | null) => {
-    if (image == null) {
+  useEffect(() => {
+    if (isNil(exifInfo)) {
       return;
     }
-    getExif(image).then(res => {
-      setImageExifInfo(res);
-      switch (res.相机品牌.toLowerCase()) {
-        case 'sony':
-          setLogoImageSrc(logoSony);
-          break;
-        case 'canon':
-          setLogoImageSrc(logoCanon);
-          break;
-        case 'nikon':
-          setLogoImageSrc(logoNikon);
-          break;
-      }
-      const image = canvasConfig.image;
-      const border = canvasConfig.border;
-      const cfg: ConfigType = {
-        ...config,
-        items: [
-          {
-            ...defaultText,
-            textTpl: '©{{版权}}',
-            x: Math.floor(image.width - image.width * 0.015),
-            y: image.height - Math.floor(image.width * 0.015),
-            bg: '#fff',
-            fontSize: Math.floor(border.bottom * 0.30),
-            fontSizeUnit: 'px',
-            textBaseline: 'alphabetic',
-            textAlign: 'right',
-            fontWeight: 'bolder',
-          },
-          {
-            ...defaultText,
-            textTpl: '{{相机品牌}} {{相机型号}}',
-            x: Math.floor(image.width * 0.015),
-            y: Math.floor(border.bottom * 0.20) + image.height,
-            fontSize: Math.floor(border.bottom * 0.30),
-            fontSizeUnit: 'px',
-            textBaseline: 'top',
-            textAlign: 'left',
-            fontWeight: 'bolder',
-          },
-          {
-            ...defaultText,
-            textTpl: '{{拍摄时间}}',
-            x: Math.floor(image.width * 0.015),
-            y: Math.floor(border.bottom * 0.60) + image.height,
-            fontSize: Math.floor(border.bottom * 0.25),
-            fontSizeUnit: 'px',
-            textBaseline: 'top',
-            textAlign: 'left',
-            fontWeight: 'normal',
-          },
-          {
-            ...defaultText,
-            textTpl: '{{镜头型号}}',
-            x: Math.floor(image.width - image.width * 0.015),
-            y: Math.floor(border.bottom * 0.20) + image.height,
-            fontSize: Math.floor(border.bottom * 0.30),
-            fontSizeUnit: 'px',
-            textBaseline: 'top',
-            textAlign: 'right',
-            fontWeight: 'bolder',
-          },
-          {
-            ...defaultText,
-            textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
-            x: Math.floor(image.width - image.width * 0.015),
-            y: Math.floor(border.bottom * 0.60) + image.height,
-            fontSize: Math.floor(border.bottom * 0.25),
-            fontSizeUnit: 'px',
-            textBaseline: 'top',
-            textAlign: 'right',
-            fontWeight: 'normal',
-          },
-        ]
-      };
-      formRef.current?.setFieldsValue(cfg);
-      setConfig(cfg);
-    });
-  }, [canvasConfig.image, canvasConfig.border, config]);
+
+    switch (exifInfo.相机品牌.toLowerCase()) {
+      case 'sony':
+        setLogoImage(logoSony);
+        break;
+      case 'canon':
+        setLogoImage(logoCanon);
+        break;
+      case 'nikon':
+        setLogoImage(logoNikon);
+        break;
+    }
+    const image = canvasConfig.image;
+    const border = canvasConfig.border;
+    const cfg: ConfigType = {
+      ...configRef.current,
+      items: [
+        {
+          ...defaultText,
+          textTpl: '©{{版权}}',
+          x: Math.floor(image.width - image.width * 0.015),
+          y: image.height - Math.floor(image.width * 0.015),
+          bg: '#fff',
+          fontSize: Math.floor(border.bottom * 0.30),
+          fontSizeUnit: 'px',
+          textBaseline: 'alphabetic',
+          textAlign: 'right',
+          fontWeight: 'bolder',
+        },
+        {
+          ...defaultText,
+          textTpl: '{{相机品牌}} {{相机型号}}',
+          x: Math.floor(image.width * 0.015),
+          y: Math.floor(border.bottom * 0.20) + image.height,
+          fontSize: Math.floor(border.bottom * 0.30),
+          fontSizeUnit: 'px',
+          textBaseline: 'top',
+          textAlign: 'left',
+          fontWeight: 'bolder',
+        },
+        {
+          ...defaultText,
+          textTpl: '{{拍摄时间}}',
+          x: Math.floor(image.width * 0.015),
+          y: Math.floor(border.bottom * 0.60) + image.height,
+          fontSize: Math.floor(border.bottom * 0.25),
+          fontSizeUnit: 'px',
+          textBaseline: 'top',
+          textAlign: 'left',
+          fontWeight: 'normal',
+        },
+        {
+          ...defaultText,
+          textTpl: '{{镜头型号}}',
+          x: Math.floor(image.width - image.width * 0.015),
+          y: Math.floor(border.bottom * 0.20) + image.height,
+          fontSize: Math.floor(border.bottom * 0.30),
+          fontSizeUnit: 'px',
+          textBaseline: 'top',
+          textAlign: 'right',
+          fontWeight: 'bolder',
+        },
+        {
+          ...defaultText,
+          textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
+          x: Math.floor(image.width - image.width * 0.015),
+          y: Math.floor(border.bottom * 0.60) + image.height,
+          fontSize: Math.floor(border.bottom * 0.25),
+          fontSizeUnit: 'px',
+          textBaseline: 'top',
+          textAlign: 'right',
+          fontWeight: 'normal',
+        },
+      ]
+    };
+    formRef.current?.setFieldsValue?.(cfg);
+    setConfig(cfg);
+  }, [canvasConfig.image, canvasConfig.border, exifInfo]);
+
   const saveImage = useCallback((ext: string = 'jpg', quality: any | null = null) => {
-    const filename = imageFilename.substring(0, imageFilename.lastIndexOf('.'));
-    setLoading(true);
+    const name = filename.substring(0, filename.lastIndexOf('.'));
+    setLoading1(true);
     const fileType: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', };
     const canvas = canvasRef.current!;
     canvas.toBlob(blob => {
-      downloadBlob(blob!, `${filename}-photo-watermark.${ext}`);
-      setLoading(false);
+      downloadBlob(blob!, `${name}-photo-watermark.${ext}`);
+      setLoading1(false);
     }, fileType[ext], quality);
-  }, [imageFilename]);
-
-  const loadImageFile = useCallback((file: UploadFile, callback: (image: HTMLImageElement) => void) => {
-    setLoading(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(file.originFileObj as Blob);
-    reader.onload = () => {
-      const image = new Image();
-      image.src = reader.result as string;
-      image.onload = () => {
-        console.log('选择图片', image.naturalWidth, image.naturalHeight);
-        callback(image);
-        setLoading(false);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    loadExif(image);
-  }, [image]);
-  useEffect(() => {
-    initCanvas()
-  }, [initCanvas]);
-  useEffect(() => {
-    if (isNil(logoImageSrc)) {
-      setLogoImage(null);
-      return;
-    }
-    const logo = new Image();
-    logo.src = logoImageSrc + '';
-    logo.onload = () => setLogoImage(logo);
-  }, [logoImageSrc]);
+  }, [filename]);
 
   const isWeXinBrowser = useMemo(() => {
     return navigator.userAgent.includes('Weixin') || navigator.userAgent.includes('WeChat');
   }, []);
+
+  const loading = useMemo(() => loading1 || loading2, [loading1, loading2]);
 
   return (
     <PageContainer>
@@ -248,10 +210,7 @@ const HomePage: React.FC = () => {
               <Upload
                 listType="picture-card"
                 showUploadList={false}
-                onChange={(info: UploadChangeParam) => {
-                  loadImageFile(info.fileList[0], setImage);
-                  setImageFilename(info.fileList[0].name);
-                }}
+                onChange={(info: UploadChangeParam) => setPhotoImage(info.fileList[0])}
                 beforeUpload={() => false}
                 maxCount={1}
               >
@@ -263,7 +222,7 @@ const HomePage: React.FC = () => {
               <Upload
                 listType="picture-card"
                 showUploadList={false}
-                onChange={(info: UploadChangeParam) => loadImageFile(info.fileList[0], setLogoImage)}
+                onChange={(info: UploadChangeParam) => setLogoImage(info.fileList[0])}
                 beforeUpload={() => false}
                 maxCount={1}
               >
@@ -304,7 +263,10 @@ const HomePage: React.FC = () => {
           <ProCard ghost>
             <Row gutter={20}>
               <Col span={24}>
-                <CheckCard.Group value={logoImageSrc} options={logos} onChange={setLogoImageSrc} size={"small"} />
+                <CheckCard.Group
+                  options={logos}
+                  onChange={v => setLogoImage(`${v}`)}
+                  size={"small"} />
               </Col>
               <Col span={24} style={{ marginBottom: 20 }}>
                 <ProCard
@@ -312,7 +274,7 @@ const HomePage: React.FC = () => {
                   headerBordered
                   collapsible
                 >
-                  <ProDescriptions dataSource={imageExifInfo} column={3} columns={[
+                  <ProDescriptions dataSource={exifInfo} column={3} columns={[
                     { title: '相机品牌', dataIndex: '相机品牌', },
                     { title: '相机型号', dataIndex: '相机型号', },
                     { title: '镜头型号', dataIndex: '镜头型号', },
@@ -326,7 +288,7 @@ const HomePage: React.FC = () => {
                   <ProDescriptions dataSource={canvasConfig.image} column={3} columns={[
                     { title: '照片宽度', dataIndex: 'width', render: dom => `${dom} px` },
                     { title: '照片高度', dataIndex: 'height', render: dom => `${dom} px` },
-                    { title: '文件名', render: () => imageFilename },
+                    { title: '文件名', render: () => filename },
                   ]} />
                 </ProCard>
               </Col>
