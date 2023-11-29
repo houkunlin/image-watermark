@@ -28,14 +28,13 @@ export type ImageExifInfo = {
   感光度: string;
 }
 
-
-export interface TextConfigType {
+export interface Text {
   // X 坐标
   x: number,
   // Y 坐标
   y: number,
   // 文字颜色
-  bg: string | Color,
+  color: string | Color,
   // 文字大小
   fontSize: number,
   // 文字大小单位
@@ -48,6 +47,9 @@ export interface TextConfigType {
   textAlign: CanvasTextAlign,
   // 文字粗细
   fontWeight: 'normal' | 'bold' | 'bolder' | 'lighter',
+}
+
+export interface TextConfigType extends Text {
   // 文字字体内容
   getFontStr: () => string,
   // 文字目标内容渲染
@@ -59,13 +61,13 @@ export interface TextConfigType {
 
 export type ConfigType = {
   items: TextConfigType[];
-  bg: string | Color;
+  background: string | Color;
 }
 
 export class TextConfig implements TextConfigType {
   x: number;
   y: number;
-  bg: string | Color;
+  color: string | Color;
   fontSize: number;
   fontSizeUnit: 'em' | 'pt' | 'px' | 'rem' | 'in';
   textTpl: string;
@@ -78,7 +80,7 @@ export class TextConfig implements TextConfigType {
   constructor(config: TextConfigType) {
     this.x = config.x;
     this.y = config.y;
-    this.bg = config.bg;
+    this.color = config.color;
     this.fontSize = config.fontSize;
     this.fontSizeUnit = config.fontSizeUnit;
     this.textTpl = config.textTpl;
@@ -178,7 +180,7 @@ export class CanvasConfig {
       context.font = item.getFontStr();
       context.textAlign = item.textAlign;
       context.textBaseline = item.textBaseline;
-      context.fillStyle = typeof item.bg === 'string' ? item.bg : item.bg.toHexString();
+      context.fillStyle = typeof item.color === 'string' ? item.color : item.color.toHexString();
       context.fillText(item.getTextStr(imageExifInfo), item.x, item.y);
     }
   }

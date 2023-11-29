@@ -32,7 +32,7 @@ import { isNil } from "lodash";
 const defaultText: TextConfigType = {
   x: 100,
   y: 250,
-  bg: '#000',
+  color: '#000',
   fontSize: 8,
   fontSizeUnit: 'em',
   textTpl: '{{相机品牌}} {{相机型号}}',
@@ -62,7 +62,7 @@ const HomePage: React.FC = () => {
   const { name } = useModel('global');
   const formRef = useRef<FormInstance>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [config, setConfig] = useState<ConfigType>({ items: [], bg: '#fff' });
+  const [config, setConfig] = useState<ConfigType>({ items: [], background: '#fff' });
   const [loading1, setLoading1] = useState<boolean>(false);
   const configRef = useLatest<ConfigType>(config);
 
@@ -82,15 +82,15 @@ const HomePage: React.FC = () => {
     if (canvas == null) {
       return;
     }
-    let bg;
-    if (typeof config.bg === 'string') {
-      bg = config.bg;
-    } else if (config.bg.toHexString) {
-      bg = config.bg.toHexString();
+    let background;
+    if (typeof config.background === 'string') {
+      background = config.background;
+    } else if (config.background.toHexString) {
+      background = config.background.toHexString();
     } else {
-      bg = '#fff';
+      background = '#fff';
     }
-    canvasConfig.render(bg, logoImage, config.items || [], exifInfo);
+    canvasConfig.render(background, logoImage, config.items || [], exifInfo);
   }, [logoImage, canvasConfig, config, exifInfo]);
 
   useEffect(() => {
@@ -119,7 +119,7 @@ const HomePage: React.FC = () => {
           textTpl: '©{{版权}}',
           x: Math.floor(image.width - image.width * 0.015),
           y: image.height - Math.floor(image.width * 0.015),
-          bg: '#fff',
+          color: '#fff',
           fontSize: Math.floor(border.bottom * 0.30),
           fontSizeUnit: 'px',
           textBaseline: 'alphabetic',
