@@ -102,6 +102,14 @@ export class TextConfig implements TextConfigType {
   }
 }
 
+export function clearCanvas(canvas: HTMLCanvasElement) {
+  canvas.width = 0;
+  canvas.height = 0;
+  const context2D = canvas.getContext('2d')!;
+  context2D.rect(0, 0, 0, 0);
+  context2D.fill();
+}
+
 export class CanvasConfig {
   el: {
     image: HTMLImageElement,

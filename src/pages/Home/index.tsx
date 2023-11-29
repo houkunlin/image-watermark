@@ -25,7 +25,7 @@ import { downloadBlob } from '@/utils';
 import { DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
 import { useDebounceFn, useLatest } from 'ahooks';
-import { CanvasConfig, ConfigType, ImageExifInfo, TextConfigType } from "./commons";
+import { CanvasConfig, clearCanvas, ConfigType, ImageExifInfo, TextConfigType } from "./commons";
 import { useImageWatermark } from "@/pages/ImageWatermark/hooks";
 import { isNil } from "lodash";
 
@@ -72,25 +72,37 @@ const HomePage: React.FC = () => {
     setConfig({ ...values });
   }, { wait: 200 });
 
-  const canvasConfig = useMemo(() => new CanvasConfig(photoImage, canvasRef.current, {
-    borderPercentage: { left: 0, top: 0, right: 0, bottom: 0.08 }
-  }), [photoImage]);
+  const canvasConfig = useMemo(() => {
+    if (!isNil(canvasRef.current)) {
+      clearCanvas(canvasRef.current);
+    }
 
-  useEffect(() => {
+    return new CanvasConfig(photoImage, canvasRef.current, {
+      borderPercentage: { left: 0, top: 0, right: 0, bottom: 0.08 }
+    });
+  }, [photoImage]);
+
+  const { run: redoRender } = useDebounceFn((logoImage: HTMLImageElement | null, canvasConfig: CanvasConfig, config: ConfigType, exifInfo: ImageExifInfo) => {
     canvasConfig.print();
     const canvas = canvasRef.current;
     if (canvas == null) {
       return;
     }
     let background;
-    if (typeof config.background === 'string') {
+    if (typeof config?.background === 'string') {
       background = config.background;
-    } else if (config.background.toHexString) {
+    } else if (config?.background?.toHexString) {
       background = config.background.toHexString();
     } else {
       background = '#fff';
     }
-    canvasConfig.render(background, logoImage, config.items || [], exifInfo);
+    setLoading1(true);
+    canvasConfig.render(background, logoImage, config.items || [], exifInfo)
+      .finally(() => setLoading1(false))
+  }, { wait: 100 });
+
+  useEffect(() => {
+    redoRender(logoImage, canvasConfig, config, exifInfo);
   }, [logoImage, canvasConfig, config, exifInfo]);
 
   useEffect(() => {
