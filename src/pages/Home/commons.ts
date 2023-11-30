@@ -62,7 +62,7 @@ export function getTextStr(text: Text, exifInfo: ExifInfo) {
   }
 }
 
-export type ConfigTypeBorder = {
+export type BorderSize = {
   left: number;
   top: number;
   right: number;
@@ -74,6 +74,11 @@ export type SquareSize = {
   height: number;
 }
 
+export type LogoSize = SquareSize & {
+  x: number;
+  y: number;
+}
+
 export type ConfigType = {
   // 文字列表
   textItems: TextConfig[];
@@ -83,7 +88,11 @@ export type ConfigType = {
    * 画布边框大小
    * @description
    */
-  border: ConfigTypeBorder;
+  border: BorderSize;
+  /**
+   * LOGO大小
+   */
+  logo: LogoSize;
 }
 
 export class TextConfig implements Text {

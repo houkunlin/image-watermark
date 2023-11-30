@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Col, Row, Space, Spin, Upload } from 'antd';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
-import { ConfigType, TextConfig } from "./commons";
+import { BorderSize, ConfigType, LogoSize, SquareSize, TextConfig } from "./commons";
 import { useImage, useImageWatermark } from "../ImageWatermark/hooks";
 import { isNil } from "lodash";
 import { CheckGroupValueType } from "@ant-design/pro-card/es/components/CheckCard/Group";
@@ -37,6 +37,7 @@ const logos = [
 const c0: ConfigType = {
   background: '#fff',
   border: { left: 0, top: 0, right: 0, bottom: 0 },
+  logo: { height: 0, width: 0, x: 0, y: 0 },
   textItems: [
     {
       textTpl: '©{{版权}}',
@@ -56,6 +57,7 @@ const c0: ConfigType = {
 const c1: ConfigType = {
   background: '#fff',
   border: { left: 0, top: 0, right: 0, bottom: 0.08 },
+  logo: { height: 0.08, width: 0, x: 0, y: 0 },
   textItems: [
     {
       textTpl: '©{{版权}}',
@@ -123,6 +125,7 @@ const c1: ConfigType = {
 const c2: ConfigType = {
   background: '#fff',
   border: { left: 0.08, top: 0.08, right: 0.08, bottom: 0.08 },
+  logo: { height: 0.08, width: 0, x: 0, y: 0 },
   textItems: [
     {
       textTpl: '©{{版权}}',
@@ -187,14 +190,35 @@ const c2: ConfigType = {
   ]
 }
 
+function calcLogoSize(photoImageSize: SquareSize, logoImageSize: SquareSize, borderSize: BorderSize, logoSize: LogoSize, padding: number = 0.20): LogoSize {
+  // const bi = logoSize.height / logoSize.width;
+  const contentHeight = 1 - padding * 2;
+
+  const logoHeight = photoImageSize.width * logoSize.height;
+
+  const newHeight = Math.floor(logoHeight * contentHeight);
+  const newWidth = Math.floor(newHeight / logoImageSize.height * logoImageSize.width);
+
+  const dx = Math.floor(borderSize.left + photoImageSize.width / 2 - newWidth / 2);
+  const dy = Math.floor(borderSize.top + photoImageSize.height + logoHeight * padding);
+
+  return {
+    height: newHeight,
+    width: newWidth,
+    x: dx,
+    y: dy,
+  }
+}
+
 /**
  * 根据图像宽高计算预设配置的配置结果
  * @param config 预设配置
- * @param width 图像宽度
- * @param height 图像高度
+ * @param photoImageSize 照片宽度、高度
+ * @param logoImageSize LOGO宽度、高度
  * @param useTemplate 是否是预设配置
  */
-function getConfigType(config: ConfigType, width: number, height: number, useTemplate: boolean): ConfigType {
+function getConfigType(config: ConfigType, photoImageSize: SquareSize, logoImageSize: SquareSize, useTemplate: boolean): ConfigType {
+  const { width, height } = photoImageSize;
   const newConfig = { ...config };
   if (useTemplate) {
     newConfig.border = {
@@ -212,11 +236,27 @@ function getConfigType(config: ConfigType, width: number, height: number, useTem
         fontSize: fontSize > 0 ? fontSize : Math.floor(width * 0.020),
       };
     });
+    newConfig.logo = calcLogoSize(photoImageSize, logoImageSize, newConfig.border, newConfig.logo);
   }
   return newConfig
 }
 
-const defaultFormValue = { textItems: [], background: '#fff', border: { left: 0, top: 0, right: 0, bottom: 0 } };
+const defaultFormValue: ConfigType = {
+  logo: {
+    height: 0,
+    width: 0,
+    x: 0,
+    y: 0
+  },
+  textItems: [],
+  background: '#fff',
+  border: {
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0
+  }
+};
 
 const ImageWatermarkValues: Record<number, ConfigType> = {
   0: c0,
@@ -246,12 +286,21 @@ const HomePage: React.FC = () => {
   const formRef = useRef<FormInstance>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [config, setConfig] = useState<ConfigType>({ ...defaultFormValue });
-  const [selectLogo, setSelectLogo] = useState<CheckGroupValueType>()
+  const [selectLogo, setSelectLogo] = useState<CheckGroupValueType>(undefined);
   const [style, setStyle] = useState<CheckGroupValueType>(0);
 
-  const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading1 } = useImage();
   const {
-    photoImageSize,
+    filename,
+    photoImage,
+    logoImage,
+    photoSize,
+    logoSize,
+    setPhotoImage,
+    setLogoImage,
+    exifInfo,
+    loading: loading1
+  } = useImage();
+  const {
     canvasSize,
     downloadImage,
     loading: loading2
@@ -282,14 +331,13 @@ const HomePage: React.FC = () => {
   }, [logoImage]);
 
   useEffect(() => {
-    const image = photoImageSize;
     // 获取预设配置
-    const c = typeof style === 'number' ? ImageWatermarkValues[style] : c1
+    const c = typeof style === 'number' ? ImageWatermarkValues[style] : c1;
 
-    const configType = getConfigType(c, image.width, image.height, true);
+    const configType = getConfigType(c, photoSize, logoSize, true);
     formRef.current?.setFieldsValue?.(configType);
     setConfig(configType);
-  }, [photoImageSize, style]);
+  }, [photoSize, logoSize, style]);
 
   const isWeXinBrowser = useMemo(() => {
     return navigator.userAgent.includes('Weixin') || navigator.userAgent.includes('WeChat');
@@ -381,7 +429,7 @@ const HomePage: React.FC = () => {
                   size={"small"} />
               </Col>
               <Col span={24} style={{ marginBottom: 20 }}>
-                <PhotoInfo exifInfo={exifInfo} photoSize={photoImageSize} canvasSize={canvasSize} filename={filename} />
+                <PhotoInfo exifInfo={exifInfo} photoSize={photoSize} canvasSize={canvasSize} filename={filename} />
               </Col>
               <Col span={24}>
                 <CheckCard.Group

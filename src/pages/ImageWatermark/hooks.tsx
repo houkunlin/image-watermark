@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  BorderSize,
   ConfigType,
-  ConfigTypeBorder,
   drawTextItems,
   ExifInfo,
   getExif,
   getTextFontStr,
   getTextStr,
+  LogoSize,
   resetCanvas,
   SquareSize,
   TextConfig
@@ -89,6 +90,8 @@ export function useImage() {
   const [exifInfo, setExifInfo] = useState<ExifInfo>(() => ({ ...defaultExifInfo }));
   const [photoImage, setPhotoImage] = useState<HTMLImageElement | null>(null);
   const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
+  const [photoSize, setPhotoSize] = useState<SquareSize>({ height: 0, width: 0 });
+  const [logoSize, setLogoSize] = useState<SquareSize>({ height: 0, width: 0 });
   const [filename, setFilename] = useState<string>('保存图片');
 
   const loadImage = useCallback((url?: ImageType, callback?: (image: HTMLImageElement | null) => void) => {
@@ -128,13 +131,25 @@ export function useImage() {
 
   const setPhotoImage1 = useMemoizedFn((image?: ImageType) => {
     revokeImage(logoImage);
-    const name = loadImage(image, setPhotoImage);
+    const name = loadImage(image, image1 => {
+      setPhotoImage(image1);
+      setPhotoSize({
+        width: image1?.naturalWidth ?? 0,
+        height: image1?.naturalHeight ?? 0,
+      });
+    });
     setFilename(isNil(name) ? '保存图片' : name);
     return name;
   })
   const setLogoImage1 = useMemoizedFn((image?: ImageType) => {
     revokeImage(logoImage);
-    loadImage(image, setLogoImage);
+    loadImage(image, image1 => {
+      setLogoImage(image1);
+      setLogoSize({
+        width: image1?.naturalWidth ?? 0,
+        height: image1?.naturalHeight ?? 0,
+      });
+    });
   })
 
   useEffect(() => {
@@ -150,6 +165,8 @@ export function useImage() {
     filename,
     photoImage,
     logoImage,
+    photoSize,
+    logoSize,
     loading,
     exifInfo,
     loadImage,
@@ -169,9 +186,8 @@ export type UseImageWatermarkProps = {
 
 export function useImageWatermark(props: UseImageWatermarkProps) {
   const [loading, { setTrue: startLoading, setFalse: stopLoading }] = useBoolean(false);
-  const [imageSize, setImageSize] = useState<SquareSize>({ height: 0, width: 0 });
   const [canvasSize, setCanvasSize] = useState<SquareSize>({ height: 0, width: 0 });
-  const [borderSize, setBorderSize] = useState<ConfigTypeBorder>({ bottom: 0, left: 0, right: 0, top: 0 });
+  // const [borderSize, setBorderSize] = useState<BorderSize>({ bottom: 0, left: 0, right: 0, top: 0 });
 
   const {
     photoImage,
@@ -184,77 +200,81 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
 
   const context = useMemo<CanvasRenderingContext2D | null | undefined>(() => canvas?.getContext('2d'), [canvas]);
 
-  const saveSize = useCallback((theBorderSize: ConfigTypeBorder, photoImage?: HTMLImageElement | null) => {
-    const theImageSize = {
+  const saveBorderAndCanvasSize = useCallback((theBorderSize: BorderSize, photoImage?: HTMLImageElement | null, logoImage?: HTMLImageElement | null) => {
+    const thePhotoSize: SquareSize = {
       width: photoImage?.naturalWidth ?? 0,
       height: photoImage?.naturalHeight ?? 0,
     };
-    setBorderSize({ ...theBorderSize });
-    const theCanvasSize = {
-      width: theImageSize.width + theBorderSize.left + theBorderSize.right,
-      height: theImageSize.height + theBorderSize.top + theBorderSize.bottom,
+    // setBorderSize({ ...theBorderSize });
+
+    const theCanvasSize: SquareSize = {
+      width: thePhotoSize.width + theBorderSize.left + theBorderSize.right,
+      height: thePhotoSize.height + theBorderSize.top + theBorderSize.bottom,
     }
     setCanvasSize(theCanvasSize);
+
+    const theLogoSize: SquareSize = {
+      width: logoImage?.naturalWidth ?? 0,
+      height: logoImage?.naturalHeight ?? 0,
+    };
+
     return {
-      imageSize: theImageSize,
+      photoSize: thePhotoSize,
+      logoSize: theLogoSize,
       borderSize: theBorderSize,
       canvasSize: theCanvasSize,
     }
   }, []);
 
-  const drawImage = useCallback(async (imageSize: SquareSize, borderSize: ConfigTypeBorder) => {
+  const drawImage = useCallback(async (photoImageSize: SquareSize, borderSize: BorderSize) => {
     if (isNil(photoImage) || isNil(canvas) || isNil(context)) {
       return;
     }
     context.drawImage(photoImage,
       0, 0,
-      imageSize.width, imageSize.height,
+      photoImageSize.width, photoImageSize.height,
       borderSize.left, borderSize.top,
-      imageSize.width, imageSize.height
+      photoImageSize.width, photoImageSize.height
     );
   }, [photoImage, canvas, context]);
-  const drawLogo = useCallback(async (imageSize: SquareSize, borderSize: ConfigTypeBorder, padding: number = 0.20) => {
+  const drawLogo = useCallback(async (logoImageSize: SquareSize, logoCanvasSize: LogoSize) => {
     if (isNil(logoImage) || isNil(canvas) || isNil(context)) {
       return;
     }
-    const width = logoImage.naturalWidth;
-    const height = logoImage.naturalHeight;
-    const bi = height / width;
-
-    const newHeight = Math.floor(borderSize.bottom * (1 - padding * 2));
-    const newWidth = Math.floor(newHeight / height * width);
 
     console.log(`useImageWatermark
-    Logo原宽高：${width}*${height}
-    Logo新宽高：${newWidth}*${newHeight}
-    Logo坐标：x=${imageSize.width / 2 - newWidth / 2}, y=${imageSize.height + borderSize.bottom * padding}
+    Logo原宽高：${logoImageSize.width}*${logoImageSize.height}
+    Logo新宽高：${logoCanvasSize.width}*${logoCanvasSize.height}
+    Logo坐标：x=${logoCanvasSize.x}, y=${logoCanvasSize.y}
     `)
-
-    const dx = borderSize.left + imageSize.width / 2 - newWidth / 2;
-    const dy = borderSize.top + imageSize.height + borderSize.bottom * padding;
 
     context.drawImage(logoImage,
       0, 0,
-      width, height,
-      dx, dy,
-      newWidth, newHeight);
+      logoImageSize.width, logoImageSize.height,
+      logoCanvasSize.x, logoCanvasSize.y,
+      logoCanvasSize.width, logoCanvasSize.height);
   }, [logoImage, context, canvas]);
-  const print = useCallback((imageSize: SquareSize, borderSize: ConfigTypeBorder, canvasSize: SquareSize) => {
+  const print = useCallback((photoSize: SquareSize, borderSize: BorderSize, canvasSize: SquareSize) => {
     console.log(`useImageWatermark
-    图片：${imageSize.width}*${imageSize.height}
+    图片：${photoSize.width}*${photoSize.height}
     画布：${canvasSize.width}*${canvasSize.height}
     边框：left=${borderSize.left}, top=${borderSize.top}, right=${borderSize.right}, bottom=${borderSize.bottom}
     `)
   }, []);
-  const render = useCallback(async (theConfig?: ConfigType) => {
+  const render = useCallback(async (theConfig: ConfigType) => {
     if (isNil(photoImage) || isNil(canvas) || isNil(context)) {
+      if (!isNil(canvas)) {
+        resetCanvas(canvas);
+      }
       return;
     }
-    if (isNil(theConfig)) {
-      theConfig = config;
-    }
 
-    const { imageSize, borderSize, canvasSize } = saveSize(theConfig.border, photoImage);
+    const {
+      photoSize,
+      logoSize,
+      borderSize,
+      canvasSize
+    } = saveBorderAndCanvasSize(theConfig.border, photoImage, logoImage);
 
     console.log('useImageWatermark render', theConfig)
 
@@ -268,11 +288,11 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
     }
 
     resetCanvas(canvas, context, canvasSize, background);
-    await drawImage(imageSize, borderSize);
-    await drawLogo(imageSize, borderSize);
+    await drawImage(photoSize, borderSize);
+    await drawLogo(logoSize, theConfig.logo);
     drawTextItems(theConfig.textItems || [], exifInfo, context);
-    print(imageSize, borderSize, canvasSize);
-  }, [drawImage, drawLogo, canvas, context, photoImage, exifInfo, config, saveSize, print]);
+    print(photoSize, borderSize, canvasSize);
+  }, [drawImage, drawLogo, canvas, context, photoImage, logoImage, exifInfo, saveBorderAndCanvasSize, print]);
   const measureText = useCallback((text: TextConfig) => {
     if (isNil(context)) {
       return;
@@ -293,29 +313,22 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
     }, fileType[ext], quality);
   }, [filename, photoImage, canvas, context, startLoading, stopLoading]);
 
-  const { run: redoRender } = useDebounceFn(async (theConfig?: ConfigType) => {
+  const { run: redoRender } = useDebounceFn(async (theConfig: ConfigType) => {
     startLoading();
     await render(theConfig);
     stopLoading();
   }, { wait: 100 });
 
   useEffect(() => {
-    if (!isNil(canvas)) {
-      resetCanvas(canvas);
-    }
-    const { imageSize } = saveSize({ bottom: 0, left: 0, right: 0, top: 0 }, photoImage);
-    setImageSize({ ...imageSize });
-    redoRender();
-  }, [photoImage]);
-  useEffect(() => {
     redoRender(config);
-  }, [config, logoImage]);
+  }, [photoImage, logoImage, config]);
+
   useWhyDidYouUpdate('useImageWatermark', { config, logoImage, photoImage });
+
   return {
     loading,
-    photoImageSize: imageSize,
     canvasSize,
-    borderSize,
+    // borderSize,
     measureText,
     redoRender,
     downloadImage,

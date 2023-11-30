@@ -64,6 +64,13 @@ function PhotoConfigForm(props: Readonly<PhotoConfigFormProps>) {
         <ProFormDigit name={['border', 'right']} label={'右边'} width={'xs'} addonAfter={'px'} />
         <ProFormDigit name={['border', 'bottom']} label={'底边'} width={'xs'} addonAfter={'px'} />
       </ProFormGroup>
+      <Divider orientation={'left'}>LOGO</Divider>
+      <ProFormGroup>
+        <ProFormDigit name={['logo', 'x']} label={'X坐标'} width={'xs'} addonAfter={'px'} />
+        <ProFormDigit name={['logo', 'y']} label={'Y坐标'} width={'xs'} addonAfter={'px'} />
+        <ProFormDigit name={['logo', 'width']} label={'宽度'} width={'xs'} addonAfter={'px'} />
+        <ProFormDigit name={['logo', 'height']} label={'高度'} width={'xs'} addonAfter={'px'} />
+      </ProFormGroup>
       <Divider orientation={'left'}>文字</Divider>
       <ProFormList<TextConfig>
         name={'textItems'}
