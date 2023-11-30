@@ -428,9 +428,10 @@ const HomePage: React.FC = () => {
                       <ProFormColorPicker
                         name={'background'}
                         label={'背景颜色'}
+                        getValueFromEvent={args => args.toHexString()}
                         fieldProps={{
                           // @ts-ignore
-                          showText: (color: any) => color.toHexString(),
+                          showText: true,
                           style: { display: 'inline-flex', width: "auto" },
                           format: 'hex',
                         }} />
@@ -496,9 +497,10 @@ const HomePage: React.FC = () => {
                             <ProFormColorPicker
                               name={'color'}
                               label={'颜色'}
+                              getValueFromEvent={args => args.toHexString()}
                               fieldProps={{
                                 // @ts-ignore
-                                showText: (color: any) => color.toHexString(),
+                                showText: true,
                                 style: { display: 'inline-flex', width: "auto" },
                                 format: 'hex',
                               }}
