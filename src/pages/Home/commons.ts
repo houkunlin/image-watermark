@@ -6,6 +6,7 @@ import handlebars from "handlebars";
 import * as math from "mathjs";
 import exif from "exif-js";
 import moment from "moment/moment";
+import { isNil } from "lodash";
 
 export type ExifInfo = {
   // 相机品牌
@@ -68,6 +69,11 @@ export type ConfigTypeBorder = {
   bottom: number;
 }
 
+export type SquareSize = {
+  width: number;
+  height: number;
+}
+
 export type ConfigType = {
   // 文字列表
   textItems: TextConfig[];
@@ -124,15 +130,45 @@ export function clearCanvas(canvas: HTMLCanvasElement) {
   context2D.fill();
 }
 
+export function resetCanvas(canvas?: HTMLCanvasElement, context?: CanvasRenderingContext2D, size?: SquareSize, fillStyle: string = '#fff') {
+  if (isNil(canvas)) {
+    return;
+  }
+  canvas.width = size?.width ?? 0;
+  canvas.height = size?.height ?? 0;
+  // context.clearRect(0, 0, size.width, size.height);
+
+  if (isNil(context)) {
+    context = canvas.getContext('2d')!;
+  }
+
+  context.fillStyle = fillStyle;
+  context.rect(0, 0, size?.width ?? 0, size?.height ?? 0);
+  context.fill();
+}
+
+export function drawTextItems(texts: TextConfig[], exifInfo: ExifInfo, context?: CanvasRenderingContext2D) {
+  if (isNil(context)) {
+    return;
+  }
+  for (const item of texts) {
+    context.font = getTextFontStr(item);
+    context.textAlign = item.textAlign;
+    context.textBaseline = item.textBaseline;
+    context.fillStyle = typeof item.color === 'string' ? item.color : item.color.toHexString();
+    context.fillText(getTextStr(item, exifInfo), item.x, item.y);
+  }
+}
+
 export class CanvasConfig {
   el: {
     image: HTMLImageElement,
     canvas: HTMLCanvasElement,
     context: CanvasRenderingContext2D,
   };
-  image: { width: number, height: number; };
-  canvas: { width: number, height: number; };
-  border: { left: number, top: number, right: number; bottom: number; };
+  image: SquareSize;
+  canvas: SquareSize;
+  border: ConfigTypeBorder;
   ready: boolean;
 
   constructor(imageElement: HTMLImageElement | null, canvas: HTMLCanvasElement | null) {
@@ -162,15 +198,6 @@ export class CanvasConfig {
     };
   }
 
-  public initCanvas(fillStyle: string = '#fff') {
-    this.el.canvas.width = this.canvas.width;
-    this.el.canvas.height = this.canvas.height;
-
-    this.el.context.fillStyle = fillStyle;
-    this.el.context.rect(0, 0, this.canvas.width, this.canvas.height);
-    this.el.context.fill();
-  }
-
   public async drawImage() {
     this.el.context.drawImage(await createImageBitmap(this.el.image),
       0, 0,
@@ -180,7 +207,7 @@ export class CanvasConfig {
     );
   }
 
-  public drawLogo(logoImage: HTMLImageElement | null, padding: number = 0.20) {
+  public async drawLogo(logoImage: HTMLImageElement | null, padding: number = 0.20) {
     if (logoImage == null) {
       return;
     }
@@ -208,17 +235,6 @@ export class CanvasConfig {
       newWidth, newHeight);
   }
 
-  public drawTexts(texts: TextConfig[], exifInfo: ExifInfo) {
-    const context = this.el.context;
-    for (let item of texts) {
-      context.font = getTextFontStr(item);
-      context.textAlign = item.textAlign;
-      context.textBaseline = item.textBaseline;
-      context.fillStyle = typeof item.color === 'string' ? item.color : item.color.toHexString();
-      context.fillText(getTextStr(item, exifInfo), item.x, item.y);
-    }
-  }
-
   public async render(logoImage: HTMLImageElement | null, config: ConfigType, exifInfo: ExifInfo) {
     if (!this.ready) {
       return;
@@ -236,10 +252,10 @@ export class CanvasConfig {
       background = '#fff';
     }
 
-    this.initCanvas(background);
+    resetCanvas(this.el.canvas, this.el.context, this.canvas, background);
     await this.drawImage();
-    this.drawLogo(logoImage);
-    this.drawTexts(config.textItems || [], exifInfo);
+    await this.drawLogo(logoImage);
+    drawTextItems(config.textItems || [], exifInfo, this.el.context);
   }
 
   public print() {

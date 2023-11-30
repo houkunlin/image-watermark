@@ -14,7 +14,7 @@ const defaultExifInfo: ExifInfo = {
  * 创建图片的访问路径
  * @param url URL地址或者Blob文件对象
  */
-function createImageUrl(url: string | Blob) {
+export function createImageUrl(url: string | Blob) {
   if (typeof url === 'string') {
     return {
       src: url,
@@ -37,7 +37,7 @@ function createImageUrl(url: string | Blob) {
  * 释放图片的资源
  * @param image 图片对象
  */
-function revokeImage(image?: HTMLImageElement | null) {
+export function revokeImage(image?: HTMLImageElement | null) {
   if (!isNil(image)) {
     if (image.src.startsWith('blob:')) {
       URL.revokeObjectURL(image.src);
@@ -56,23 +56,23 @@ function revokeImage(image?: HTMLImageElement | null) {
 export function getImage(url: string | Blob) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const imgUrl = createImageUrl(url);
-    console.log('getImage', url, imgUrl)
+    console.log('getImage', imgUrl.src, url,);
     const image = new Image();
     image.src = imgUrl.src;
     image.onload = () => {
-      console.log('加载图片', image.naturalWidth, image.naturalHeight);
+      console.log('getImage 加载图片', image.naturalWidth, image.naturalHeight);
       imgUrl.revokeObjectURL();
       resolve(image);
     }
     image.onerror = (event: Event | string, source?: string, lineno?: number, colno?: number, error?: Error) => {
-      console.error('图片加载失败', event, source, lineno, colno, error);
+      console.error('getImage 图片加载失败', event, source, lineno, colno, error);
       imgUrl.revokeObjectURL();
       reject(error);
     }
   });
 }
 
-export function useImageWatermark() {
+export function useImage() {
   const [loading, { setTrue: startLoading, setFalse: stopLoading }] = useBoolean(false);
   const [exifInfo, setExifInfo] = useState<ExifInfo>(() => ({ ...defaultExifInfo }));
   const [photoImage, setPhotoImage] = useState<HTMLImageElement | null>(null);

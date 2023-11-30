@@ -25,7 +25,7 @@ import { DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { UploadChangeParam } from "antd/lib/upload/interface";
 import { useDebounceFn, useLatest } from 'ahooks';
 import { CanvasConfig, clearCanvas, ConfigType, ExifInfo, TextConfig } from "./commons";
-import { useImageWatermark } from "@/pages/ImageWatermark/hooks";
+import { useImage } from "@/pages/ImageWatermark/hooks";
 import { isNil } from "lodash";
 import { CheckGroupValueType } from "@ant-design/pro-card/es/components/CheckCard/Group";
 
@@ -262,7 +262,7 @@ const HomePage: React.FC = () => {
   const [loading1, setLoading1] = useState<boolean>(false);
   const [style, setStyle] = useState<CheckGroupValueType>(0);
 
-  const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading2 } = useImageWatermark();
+  const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading2 } = useImage();
 
   const { run: setConfigDebounceFn } = useDebounceFn((changedValues, values) => {
     setConfig({ ...values });
