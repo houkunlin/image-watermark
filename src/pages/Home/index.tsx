@@ -436,7 +436,8 @@ const HomePage: React.FC = () => {
                     setImagePreviewSrc(undefined);
                   }
                 },
-                scaleStep: 1.0,
+                scaleStep: 0.2,
+                minScale: 0.5,
                 src: imagePreviewSrc,
               }}
             />
