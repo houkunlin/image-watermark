@@ -27,6 +27,7 @@ import { useDebounceFn, useLatest } from 'ahooks';
 import { CanvasConfig, clearCanvas, ConfigType, ExifInfo, TextConfig } from "./commons";
 import { useImageWatermark } from "@/pages/ImageWatermark/hooks";
 import { isNil } from "lodash";
+import { CheckGroupValueType } from "@ant-design/pro-card/es/components/CheckCard/Group";
 
 const defaultText = new TextConfig({
   x: 100,
@@ -46,13 +47,220 @@ const logos = [
   { avatar: (<img alt="尼康" src={logoNikon} style={{ width: '100%', height: '50px' }} />), value: logoNikon, },
 ]
 
+// 无预设配置
+const c0: ConfigType = {
+  background: '#fff',
+  border: { left: 0, top: 0, right: 0, bottom: 0 },
+  textItems: [
+    {
+      textTpl: '©{{版权}}',
+      x: 1,
+      y: 1,
+      color: '#fff',
+      fontSize: 1,
+      fontSizeUnit: 'px',
+      textBaseline: 'bottom',
+      textAlign: 'right',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+  ]
+}
+// 预设配置1
+const c1: ConfigType = {
+  background: '#fff',
+  border: { left: 0, top: 0, right: 0, bottom: 0.08 },
+  textItems: [
+    {
+      textTpl: '©{{版权}}',
+      x: 0.985,
+      y: -0.42,
+      color: '#fff',
+      fontSize: 0.30,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'right',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{相机品牌}} {{相机型号}}',
+      x: 0.015,
+      y: 0.20,
+      color: '#000',
+      fontSize: 0.30,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'left',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{拍摄时间}}',
+      x: 0.015,
+      y: 0.60,
+      color: '#000',
+      fontSize: 0.25,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'left',
+      fontWeight: 'normal',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{镜头型号}}',
+      x: 0.985,
+      y: 0.20,
+      color: '#000',
+      fontSize: 0.30,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'right',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
+      x: 0.985,
+      y: 0.60,
+      color: '#000',
+      fontSize: 0.25,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'right',
+      fontWeight: 'normal',
+      openDrawer: false,
+    },
+  ]
+}
+// 预设配置2
+const c2: ConfigType = {
+  background: '#fff',
+  border: { left: 0.08, top: 0.08, right: 0.08, bottom: 0.08 },
+  textItems: [
+    {
+      textTpl: '©{{版权}}',
+      x: 0.985,
+      y: -0.42,
+      color: '#fff',
+      fontSize: 0.30,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'right',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{相机品牌}} {{相机型号}}',
+      x: 0.015,
+      y: 0.20,
+      color: '#000',
+      fontSize: 0.30,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'left',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{拍摄时间}}',
+      x: 0.015,
+      y: 0.60,
+      color: '#000',
+      fontSize: 0.25,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'left',
+      fontWeight: 'normal',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{镜头型号}}',
+      x: 0.985,
+      y: 0.20,
+      color: '#000',
+      fontSize: 0.30,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'right',
+      fontWeight: 'bolder',
+      openDrawer: false,
+    },
+    {
+      textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
+      x: 0.985,
+      y: 0.60,
+      color: '#000',
+      fontSize: 0.25,
+      fontSizeUnit: 'px',
+      textBaseline: 'top',
+      textAlign: 'right',
+      fontWeight: 'normal',
+      openDrawer: false,
+    },
+  ]
+}
+
+/**
+ * 根据图像宽高计算预设配置的配置结果
+ * @param config 预设配置
+ * @param width 图像宽度
+ * @param height 图像高度
+ * @param useTemplate 是否是预设配置
+ */
+function getConfigType(config: ConfigType, width: number, height: number, useTemplate: boolean): ConfigType {
+  const newConfig = { ...config };
+  if (useTemplate) {
+    newConfig.border = {
+      left: Math.floor(width * config.border.left),
+      top: Math.floor(width * config.border.top),
+      right: Math.floor(width * config.border.right),
+      bottom: Math.floor(width * config.border.bottom),
+    };
+    newConfig.textItems = config.textItems.map(item => {
+      const fontSize = Math.floor(newConfig.border.bottom * item.fontSize);
+      return {
+        ...item,
+        x: newConfig.border.left + Math.floor(width * item.x),
+        y: newConfig.border.top + Math.floor(newConfig.border.bottom * item.y) + height,
+        fontSize: fontSize > 0 ? fontSize : Math.floor(width * 0.020),
+      };
+    });
+  }
+  return newConfig
+}
+
+
+const ImageWatermarkValues: Record<number, ConfigType> = {
+  0: c0,
+  1: c1,
+  2: c2,
+}
+const ImageWatermarkStyles = [
+  {
+    title: '预设1',
+    description: '底部边框',
+    value: 1,
+  },
+  {
+    title: '预设2',
+    description: '全部边框',
+    value: 2,
+  },
+  {
+    title: '无水印',
+    description: '无边框无水印',
+    value: 0,
+  },
+]
+
 const HomePage: React.FC = () => {
   const { name } = useModel('global');
   const formRef = useRef<FormInstance>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [config, setConfig] = useState<ConfigType>({ textItems: [], background: '#fff', border: { left: 0, top: 0, right: 0, bottom: 0 } });
   const [loading1, setLoading1] = useState<boolean>(false);
-  const configRef = useLatest<ConfigType>(config);
+  const [style, setStyle] = useState<CheckGroupValueType>(0);
 
   const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading2 } = useImageWatermark();
 
@@ -65,9 +273,7 @@ const HomePage: React.FC = () => {
       clearCanvas(canvasRef.current);
     }
 
-    return new CanvasConfig(photoImage, canvasRef.current, {
-      borderPercentage: { left: 0, top: 0, right: 0, bottom: 0.08 }
-    });
+    return new CanvasConfig(photoImage, canvasRef.current);
   }, [photoImage]);
 
   const { run: redoRender } = useDebounceFn((logoImage: HTMLImageElement | null, canvasConfig: CanvasConfig, config: ConfigType, exifInfo: ExifInfo) => {
@@ -76,17 +282,8 @@ const HomePage: React.FC = () => {
     if (canvas == null) {
       return;
     }
-    let background;
-    if (typeof config?.background === 'string') {
-      background = config.background;
-    } else if (config?.background?.toHexString) {
-      background = config.background.toHexString();
-    } else {
-      background = '#fff';
-    }
     setLoading1(true);
-    canvasConfig.render(background, logoImage, config.textItems || [], exifInfo)
-      .finally(() => setLoading1(false))
+    canvasConfig.render(logoImage, config, exifInfo).finally(() => setLoading1(false));
   }, { wait: 100 });
 
   useEffect(() => {
@@ -111,70 +308,12 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     const image = canvasConfig.image;
-    const border = canvasConfig.border;
-    const cfg: ConfigType = {
-      ...configRef.current,
-      textItems: [
-        new TextConfig({
-          textTpl: '©{{版权}}',
-          x: Math.floor(image.width - image.width * 0.015),
-          y: image.height - Math.floor(image.width * 0.015),
-          color: '#fff',
-          fontSize: Math.floor(border.bottom * 0.30),
-          fontSizeUnit: 'px',
-          textBaseline: 'alphabetic',
-          textAlign: 'right',
-          fontWeight: 'bolder',
-        }),
-        new TextConfig({
-          textTpl: '{{相机品牌}} {{相机型号}}',
-          x: Math.floor(image.width * 0.015),
-          y: Math.floor(border.bottom * 0.20) + image.height,
-          color: '#000',
-          fontSize: Math.floor(border.bottom * 0.30),
-          fontSizeUnit: 'px',
-          textBaseline: 'top',
-          textAlign: 'left',
-          fontWeight: 'bolder',
-        }),
-        new TextConfig({
-          textTpl: '{{拍摄时间}}',
-          x: Math.floor(image.width * 0.015),
-          y: Math.floor(border.bottom * 0.60) + image.height,
-          color: '#000',
-          fontSize: Math.floor(border.bottom * 0.25),
-          fontSizeUnit: 'px',
-          textBaseline: 'top',
-          textAlign: 'left',
-          fontWeight: 'normal',
-        }),
-        new TextConfig({
-          textTpl: '{{镜头型号}}',
-          x: Math.floor(image.width - image.width * 0.015),
-          y: Math.floor(border.bottom * 0.20) + image.height,
-          color: '#000',
-          fontSize: Math.floor(border.bottom * 0.30),
-          fontSizeUnit: 'px',
-          textBaseline: 'top',
-          textAlign: 'right',
-          fontWeight: 'bolder',
-        }),
-        new TextConfig({
-          textTpl: '{{光圈}} {{快门}} {{焦距}} ISO{{感光度}}',
-          x: Math.floor(image.width - image.width * 0.015),
-          y: Math.floor(border.bottom * 0.60) + image.height,
-          color: '#000',
-          fontSize: Math.floor(border.bottom * 0.25),
-          fontSizeUnit: 'px',
-          textBaseline: 'top',
-          textAlign: 'right',
-          fontWeight: 'normal',
-        }),
-      ]
-    };
-    formRef.current?.setFieldsValue?.(cfg);
-    setConfig(cfg);
-  }, [canvasConfig]);
+    const c = typeof style === 'number' ? ImageWatermarkValues[style] : c1
+
+    const configType = getConfigType(c, image.width, image.height, true);
+    formRef.current?.setFieldsValue?.(configType);
+    setConfig(configType);
+  }, [canvasConfig, style]);
 
   const saveImage = useCallback((ext: string = 'jpg', quality: any | null = null) => {
     const name = filename.substring(0, filename.lastIndexOf('.'));
@@ -192,6 +331,7 @@ const HomePage: React.FC = () => {
   }, []);
 
   const loading = useMemo(() => loading1 || loading2, [loading1, loading2]);
+  const canvasInfoRef = useLatest(canvasConfig.canvas);
 
   return (
     <PageContainer>
@@ -290,25 +430,18 @@ const HomePage: React.FC = () => {
                     { title: '照片高度', dataIndex: 'height', render: dom => `${dom} px` },
                     { title: '文件名', render: () => filename },
                   ]} />
+                  <ProDescriptions dataSource={canvasInfoRef.current} column={3} columns={[
+                    { title: '画布宽度', dataIndex: 'width', render: dom => `${dom} px` },
+                    { title: '画布高度', dataIndex: 'height', render: dom => `${dom} px` },
+                  ]} />
                 </ProCard>
               </Col>
-              <Col span={24} style={{ marginBottom: 20 }}>
-                <ProCard
-                  title="其他信息"
-                  headerBordered
-                  collapsible
-                >
-                  <ProDescriptions title="画布" dataSource={canvasConfig.canvas} column={4} columns={[
-                    { title: '宽度', dataIndex: 'width', render: dom => `${dom} px` },
-                    { title: '高度', dataIndex: 'height', render: dom => `${dom} px` },
-                  ]} />
-                  <ProDescriptions title="边框宽度" dataSource={canvasConfig.border} column={4} columns={[
-                    { title: '左边', dataIndex: 'left', render: dom => `${dom} px` },
-                    { title: '顶边', dataIndex: 'top', render: dom => `${dom} px` },
-                    { title: '右边', dataIndex: 'right', render: dom => `${dom} px` },
-                    { title: '底边', dataIndex: 'bottom', render: dom => `${dom} px` },
-                  ]} />
-                </ProCard>
+              <Col span={24}>
+                <CheckCard.Group
+                  value={style}
+                  onChange={v => setStyle(v ?? 0)}
+                  options={ImageWatermarkStyles}
+                  size={"small"} />
               </Col>
               <Col span={24}>
                 <ProCard>
@@ -329,10 +462,10 @@ const HomePage: React.FC = () => {
                           style: { display: 'inline-flex', width: "auto" },
                           format: 'hex',
                         }} />
-                      {/*<ProFormDigit name={['border', 'left']} label={'左边'} width={'xs'} addonAfter={'px'} />
+                      <ProFormDigit name={['border', 'left']} label={'左边'} width={'xs'} addonAfter={'px'} />
                       <ProFormDigit name={['border', 'top']} label={'顶边'} width={'xs'} addonAfter={'px'} />
                       <ProFormDigit name={['border', 'right']} label={'右边'} width={'xs'} addonAfter={'px'} />
-                      <ProFormDigit name={['border', 'bottom']} label={'底边'} width={'xs'} addonAfter={'px'} />*/}
+                      <ProFormDigit name={['border', 'bottom']} label={'底边'} width={'xs'} addonAfter={'px'} />
                     </ProFormGroup>
                     <Divider orientation={'left'}>文字</Divider>
                     <ProFormList<TextConfig>

@@ -61,6 +61,13 @@ export function getTextStr(text: Text, exifInfo: ExifInfo) {
   }
 }
 
+export type ConfigTypeBorder = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 export type ConfigType = {
   // 文字列表
   textItems: TextConfig[];
@@ -70,12 +77,7 @@ export type ConfigType = {
    * 画布边框大小
    * @description
    */
-  border: {
-    left: number;
-    top: number;
-    right: number;
-    bottom: number;
-  };
+  border: ConfigTypeBorder;
 }
 
 export class TextConfig implements Text {
@@ -131,10 +133,9 @@ export class CanvasConfig {
   image: { width: number, height: number; };
   canvas: { width: number, height: number; };
   border: { left: number, top: number, right: number; bottom: number; };
-  borderPercentage: { left: number, top: number, right: number; bottom: number; };
   ready: boolean;
 
-  constructor(imageElement: HTMLImageElement | null, canvas: HTMLCanvasElement | null, config: any) {
+  constructor(imageElement: HTMLImageElement | null, canvas: HTMLCanvasElement | null) {
     this.ready = !(imageElement == null || canvas == null);
     this.el = {
       image: imageElement ? imageElement : {} as HTMLImageElement,
@@ -142,13 +143,19 @@ export class CanvasConfig {
       context: canvas ? canvas.getContext('2d')! : {} as CanvasRenderingContext2D,
     };
     this.image = { width: imageElement?.naturalWidth ?? 0, height: imageElement?.naturalHeight ?? 0, };
-    this.borderPercentage = config.borderPercentage;
-    this.border = {
-      left: Math.floor(this.image.width * this.borderPercentage.left),
-      top: Math.floor(this.image.width * this.borderPercentage.top),
-      right: Math.floor(this.image.width * this.borderPercentage.right),
-      bottom: Math.floor(this.image.width * this.borderPercentage.bottom),
+    this.border = { left: 0, top: 0, right: 0, bottom: 0, };
+    this.canvas = {
+      width: this.image.width + this.border.left + this.border.right,
+      height: this.image.height + this.border.top + this.border.bottom,
     };
+  }
+
+  /**
+   * 重设边框宽度
+   * @param border 边框宽度
+   */
+  public resetBorder(border: ConfigTypeBorder) {
+    this.border = { ...border };
     this.canvas = {
       width: this.image.width + this.border.left + this.border.right,
       height: this.image.height + this.border.top + this.border.bottom,
@@ -191,7 +198,14 @@ export class CanvasConfig {
     Logo坐标：x=${this.image.width / 2 - newWidth / 2}, y=${this.image.height + this.border.bottom * padding}
     `)
 
-    context.drawImage(logoImage, 0, 0, width, height, (this.image.width / 2 - newWidth / 2), (this.image.height + this.border.bottom * padding), newWidth, newHeight);
+    const dx = this.border.left + this.image.width / 2 - newWidth / 2;
+    const dy = this.border.top + this.image.height + this.border.bottom * padding;
+
+    context.drawImage(logoImage,
+      0, 0,
+      width, height,
+      dx, dy,
+      newWidth, newHeight);
   }
 
   public drawTexts(texts: TextConfig[], exifInfo: ExifInfo) {
@@ -205,14 +219,27 @@ export class CanvasConfig {
     }
   }
 
-  public async render(fillStyle: string = '#fff', logoImage: HTMLImageElement | null, texts: TextConfig[] = [], exifInfo: ExifInfo) {
+  public async render(logoImage: HTMLImageElement | null, config: ConfigType, exifInfo: ExifInfo) {
     if (!this.ready) {
       return;
     }
-    this.initCanvas(fillStyle);
+    this.resetBorder(config.border);
+
+    console.log('render', config)
+
+    let background;
+    if (typeof config?.background === 'string') {
+      background = config.background;
+    } else if (config?.background?.toHexString) {
+      background = config.background.toHexString();
+    } else {
+      background = '#fff';
+    }
+
+    this.initCanvas(background);
     await this.drawImage();
     this.drawLogo(logoImage);
-    this.drawTexts(texts, exifInfo);
+    this.drawTexts(config.textItems || [], exifInfo);
   }
 
   public print() {
@@ -220,7 +247,6 @@ export class CanvasConfig {
     图片：${this.image.width}*${this.image.height}
     画布：${this.canvas.width}*${this.canvas.height}
     边框：left=${this.border.left}, top=${this.border.top}, right=${this.border.right}, bottom=${this.border.bottom}
-    边框比例：left=${this.borderPercentage.left}, top=${this.borderPercentage.top}, right=${this.borderPercentage.right}, bottom=${this.borderPercentage.bottom}
     `)
   }
 
