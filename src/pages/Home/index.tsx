@@ -259,6 +259,7 @@ const HomePage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [config, setConfig] = useState<ConfigType>({ textItems: [], background: '#fff', border: { left: 0, top: 0, right: 0, bottom: 0 } });
   const [loading1, setLoading1] = useState<boolean>(false);
+  const [selectLogo, setSelectLogo] = useState<CheckGroupValueType>()
   const [style, setStyle] = useState<CheckGroupValueType>(0);
 
   const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading2 } = useImage();
@@ -289,6 +290,13 @@ const HomePage: React.FC = () => {
         break;
     }
   }, [exifInfo]);
+  useEffect(() => {
+    if (isNil(logoImage)) {
+      setSelectLogo(undefined);
+      return;
+    }
+    setSelectLogo(logoImage.src);
+  }, [logoImage]);
 
   useEffect(() => {
     const image = photoImageSize;
@@ -376,8 +384,12 @@ const HomePage: React.FC = () => {
             <Row gutter={20}>
               <Col span={24}>
                 <CheckCard.Group
+                  value={selectLogo}
                   options={logos}
-                  onChange={v => setLogoImage(v ? `${v}` : undefined)}
+                  onChange={v => {
+                    setSelectLogo(v);
+                    setLogoImage(v ? `${v}` : undefined);
+                  }}
                   size={"small"} />
               </Col>
               <Col span={24} style={{ marginBottom: 20 }}>
