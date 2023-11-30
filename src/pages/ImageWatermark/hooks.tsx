@@ -314,9 +314,12 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
   }, [filename, photoImage, canvas, context, startLoading, stopLoading]);
 
   const { run: redoRender } = useDebounceFn(async (theConfig: ConfigType) => {
+    const start = new Date().getTime();
     startLoading();
     await render(theConfig);
     stopLoading();
+    const end = new Date().getTime() - start;
+    console.log('耗时', end, 'ms')
   }, { wait: 100 });
 
   useEffect(() => {
