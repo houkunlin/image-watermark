@@ -336,8 +336,12 @@ const HomePage: React.FC = () => {
                 </div>
               </Upload>
               <Space.Compact>
-                <Button onClick={() => downloadImage('jpg')}><DownloadOutlined /> 保存图片 ( JPG )</Button>
-                <Button onClick={() => downloadImage('png')}><DownloadOutlined /> 保存图片 ( PNG )</Button>
+                <Button onClick={() => downloadImage('jpg')} disabled={isNil(photoImage)}>
+                  <DownloadOutlined /> 保存图片 ( JPG )
+                </Button>
+                <Button onClick={() => downloadImage('png')} disabled={isNil(photoImage)}>
+                  <DownloadOutlined /> 保存图片 ( PNG )
+                </Button>
               </Space.Compact>
             </Space>
             {/*<RcImage
