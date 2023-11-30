@@ -33,20 +33,34 @@ const logos = [
   { avatar: (<img alt="尼康" src={logoNikon} style={{ width: '100%', height: '50px' }} />), value: logoNikon, },
 ]
 
+type ConfigTypeTemplate = ConfigType & {
+  /**
+   * 文字大小基于图片宽度的比例
+   */
+  fontSize: number;
+  /**
+   * 除了边框之外，再加一个边框的设置，因为边框会加入一些其他的计算，改变边框会影响计算结果
+   * 新增的这个边距不参与其他计算，将直接作为边框的边距
+   */
+  padding: BorderSize;
+};
+
 // 无预设配置
-const c0: ConfigType = {
+const c0: ConfigTypeTemplate = {
   background: '#fff',
+  fontSize: 0.08,
   border: { left: 0, top: 0, right: 0, bottom: 0 },
+  padding: { left: 0, top: 0, right: 0, bottom: 0 },
   logo: { height: 0, width: 0, x: 0, y: 0 },
   textItems: [
     {
       textTpl: '©{{版权}}',
-      x: 1,
-      y: 1,
+      x: 0.985,
+      y: -0.42,
       color: '#fff',
-      fontSize: 1,
+      fontSize: 0.30,
       fontSizeUnit: 'px',
-      textBaseline: 'bottom',
+      textBaseline: 'top',
       textAlign: 'right',
       fontWeight: 'bolder',
       openDrawer: false,
@@ -54,9 +68,11 @@ const c0: ConfigType = {
   ]
 }
 // 预设配置1
-const c1: ConfigType = {
+const c1: ConfigTypeTemplate = {
   background: '#fff',
+  fontSize: 0.08,
   border: { left: 0, top: 0, right: 0, bottom: 0.08 },
+  padding: { left: 0, top: 0, right: 0, bottom: 0 },
   logo: { height: 0.08, width: 0, x: 0, y: 0 },
   textItems: [
     {
@@ -122,9 +138,11 @@ const c1: ConfigType = {
   ]
 }
 // 预设配置2
-const c2: ConfigType = {
+const c2: ConfigTypeTemplate = {
   background: '#fff',
+  fontSize: 0.08,
   border: { left: 0.08, top: 0.08, right: 0.08, bottom: 0.08 },
+  padding: { left: 0, top: 0, right: 0, bottom: 0.04 },
   logo: { height: 0.08, width: 0, x: 0, y: 0 },
   textItems: [
     {
@@ -217,26 +235,32 @@ function calcLogoSize(photoImageSize: SquareSize, logoImageSize: SquareSize, bor
  * @param logoImageSize LOGO宽度、高度
  * @param useTemplate 是否是预设配置
  */
-function getConfigType(config: ConfigType, photoImageSize: SquareSize, logoImageSize: SquareSize, useTemplate: boolean): ConfigType {
+function getConfigType(config: ConfigTypeTemplate, photoImageSize: SquareSize, logoImageSize: SquareSize, useTemplate: boolean): ConfigType {
   const { width, height } = photoImageSize;
   const newConfig = { ...config };
   if (useTemplate) {
-    newConfig.border = {
+    const theBorder = {
       left: Math.floor(width * config.border.left),
       top: Math.floor(width * config.border.top),
       right: Math.floor(width * config.border.right),
       bottom: Math.floor(width * config.border.bottom),
     };
+    const fontSizeBase = width * config.fontSize;
     newConfig.textItems = config.textItems.map(item => {
-      const fontSize = Math.floor(newConfig.border.bottom * item.fontSize);
       return {
         ...item,
-        x: newConfig.border.left + Math.floor(width * item.x),
-        y: newConfig.border.top + Math.floor(newConfig.border.bottom * item.y) + height,
-        fontSize: fontSize > 0 ? fontSize : Math.floor(width * 0.020),
+        x: theBorder.left + Math.floor(width * item.x),
+        y: theBorder.top + Math.floor(fontSizeBase * item.y) + height,
+        fontSize: Math.floor(fontSizeBase * item.fontSize),
       };
     });
-    newConfig.logo = calcLogoSize(photoImageSize, logoImageSize, newConfig.border, newConfig.logo);
+    newConfig.logo = calcLogoSize(photoImageSize, logoImageSize, theBorder, newConfig.logo);
+    newConfig.border = {
+      left: theBorder.left + Math.floor(width * config.padding.left),
+      top: theBorder.top + Math.floor(width * config.padding.top),
+      right: theBorder.right + Math.floor(width * config.padding.right),
+      bottom: theBorder.bottom + Math.floor(width * config.padding.bottom),
+    };
   }
   return newConfig
 }
@@ -258,7 +282,7 @@ const defaultFormValue: ConfigType = {
   }
 };
 
-const ImageWatermarkValues: Record<number, ConfigType> = {
+const ImageWatermarkValues: Record<number, ConfigTypeTemplate> = {
   0: c0,
   1: c1,
   2: c2,
