@@ -122,14 +122,6 @@ export class TextConfig implements Text {
   }
 }
 
-export function clearCanvas(canvas: HTMLCanvasElement) {
-  canvas.width = 0;
-  canvas.height = 0;
-  const context2D = canvas.getContext('2d')!;
-  context2D.rect(0, 0, 0, 0);
-  context2D.fill();
-}
-
 export function resetCanvas(canvas?: HTMLCanvasElement, context?: CanvasRenderingContext2D, size?: SquareSize, fillStyle: string = '#fff') {
   if (isNil(canvas)) {
     return;

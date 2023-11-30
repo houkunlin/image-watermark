@@ -18,14 +18,13 @@ import styles from './index.less';
 import logoSony from "@/assets/logo/Sony.svg";
 import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Col, Divider, Modal, Row, Space, Spin, Upload } from 'antd';
-import { downloadBlob } from '@/utils';
 import { DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
-import { useDebounceFn, useLatest } from 'ahooks';
-import { CanvasConfig, clearCanvas, ConfigType, ExifInfo, TextConfig } from "./commons";
-import { useImage } from "@/pages/ImageWatermark/hooks";
+import { useDebounceFn } from 'ahooks';
+import { ConfigType, TextConfig } from "./commons";
+import { useImage, useImageWatermark } from "../ImageWatermark/hooks";
 import { isNil } from "lodash";
 import { CheckGroupValueType } from "@ant-design/pro-card/es/components/CheckCard/Group";
 
@@ -263,32 +262,17 @@ const HomePage: React.FC = () => {
   const [style, setStyle] = useState<CheckGroupValueType>(0);
 
   const { filename, photoImage, logoImage, setPhotoImage, setLogoImage, exifInfo, loading: loading2 } = useImage();
+  const {
+    photoImageSize,
+    canvasSize,
+    downloadImage,
+    loading: loading3
+  } = useImageWatermark({ photoImage, logoImage, canvas: canvasRef.current, exifInfo, filename, config });
 
   const { run: setConfigDebounceFn } = useDebounceFn((changedValues, values) => {
     setConfig({ ...values });
   }, { wait: 200 });
 
-  const canvasConfig = useMemo(() => {
-    if (!isNil(canvasRef.current)) {
-      clearCanvas(canvasRef.current);
-    }
-
-    return new CanvasConfig(photoImage, canvasRef.current);
-  }, [photoImage]);
-
-  const { run: redoRender } = useDebounceFn((logoImage: HTMLImageElement | null, canvasConfig: CanvasConfig, config: ConfigType, exifInfo: ExifInfo) => {
-    canvasConfig.print();
-    const canvas = canvasRef.current;
-    if (canvas == null) {
-      return;
-    }
-    setLoading1(true);
-    canvasConfig.render(logoImage, config, exifInfo).finally(() => setLoading1(false));
-  }, { wait: 100 });
-
-  useEffect(() => {
-    redoRender(logoImage, canvasConfig, config, exifInfo);
-  }, [logoImage, canvasConfig, config, exifInfo]);
   useEffect(() => {
     if (isNil(exifInfo)) {
       return;
@@ -307,31 +291,19 @@ const HomePage: React.FC = () => {
   }, [exifInfo]);
 
   useEffect(() => {
-    const image = canvasConfig.image;
+    const image = photoImageSize;
     const c = typeof style === 'number' ? ImageWatermarkValues[style] : c1
 
     const configType = getConfigType(c, image.width, image.height, true);
     formRef.current?.setFieldsValue?.(configType);
     setConfig(configType);
-  }, [canvasConfig, style]);
-
-  const saveImage = useCallback((ext: string = 'jpg', quality: any | null = null) => {
-    const name = filename.substring(0, filename.lastIndexOf('.'));
-    setLoading1(true);
-    const fileType: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', };
-    const canvas = canvasRef.current!;
-    canvas.toBlob(blob => {
-      downloadBlob(blob!, `${name}-photo-watermark.${ext}`);
-      setLoading1(false);
-    }, fileType[ext], quality);
-  }, [filename]);
+  }, [photoImageSize, style]);
 
   const isWeXinBrowser = useMemo(() => {
     return navigator.userAgent.includes('Weixin') || navigator.userAgent.includes('WeChat');
   }, []);
 
-  const loading = useMemo(() => loading1 || loading2, [loading1, loading2]);
-  const canvasInfoRef = useLatest(canvasConfig.canvas);
+  const loading = useMemo(() => loading1 || loading2 || loading3, [loading1, loading2, loading3]);
 
   return (
     <PageContainer>
@@ -372,8 +344,8 @@ const HomePage: React.FC = () => {
                 </div>
               </Upload>
               <Space.Compact>
-                <Button onClick={() => saveImage('jpg')}><DownloadOutlined /> 保存图片 ( JPG )</Button>
-                <Button onClick={() => saveImage('png')}><DownloadOutlined /> 保存图片 ( PNG )</Button>
+                <Button onClick={() => downloadImage('jpg')}><DownloadOutlined /> 保存图片 ( JPG )</Button>
+                <Button onClick={() => downloadImage('png')}><DownloadOutlined /> 保存图片 ( PNG )</Button>
               </Space.Compact>
             </Space>
             {/*<RcImage
@@ -425,12 +397,12 @@ const HomePage: React.FC = () => {
                     { title: '焦距', dataIndex: '焦距', },
                     { title: '感光度', dataIndex: '感光度', },
                   ]} />
-                  <ProDescriptions dataSource={canvasConfig.image} column={3} columns={[
+                  <ProDescriptions dataSource={photoImageSize} column={3} columns={[
                     { title: '照片宽度', dataIndex: 'width', render: dom => `${dom} px` },
                     { title: '照片高度', dataIndex: 'height', render: dom => `${dom} px` },
                     { title: '文件名', render: () => filename },
                   ]} />
-                  <ProDescriptions dataSource={canvasInfoRef.current} column={3} columns={[
+                  <ProDescriptions dataSource={canvasSize} column={3} columns={[
                     { title: '画布宽度', dataIndex: 'width', render: dom => `${dom} px` },
                     { title: '画布高度', dataIndex: 'height', render: dom => `${dom} px` },
                   ]} />
