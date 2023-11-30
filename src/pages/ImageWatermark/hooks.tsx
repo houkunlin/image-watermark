@@ -4,9 +4,12 @@ import {
   ConfigType,
   drawTextItems,
   ExifInfo,
+  getEXIF,
   getExif,
+  getSegments,
   getTextFontStr,
   getTextStr,
+  insertEXIF,
   LogoSize,
   resetCanvas,
   SquareSize,
@@ -93,6 +96,7 @@ export function useImage() {
   const [photoSize, setPhotoSize] = useState<SquareSize>({ height: 0, width: 0 });
   const [logoSize, setLogoSize] = useState<SquareSize>({ height: 0, width: 0 });
   const [filename, setFilename] = useState<string>('保存图片');
+  const [exifBytes, setExifBytes] = useState<number[]>(() => ([]));
 
   const loadImage = useCallback((url?: ImageType, callback?: (image: HTMLImageElement | null) => void) => {
     if (url instanceof HTMLImageElement) {
@@ -155,10 +159,19 @@ export function useImage() {
   useEffect(() => {
     if (isNil(photoImage)) {
       setExifInfo({ ...defaultExifInfo });
+      setExifBytes([]);
       return;
     }
     startLoading();
     getExif(photoImage).then(setExifInfo).finally(stopLoading);
+
+    if (photoImage.src.startsWith('blob:')) {
+      fetch(photoImage.src)
+        .then(res => res.arrayBuffer())
+        .then(getSegments)
+        .then(getEXIF)
+        .then(setExifBytes);
+    }
   }, [photoImage]);
 
   return {
@@ -169,6 +182,7 @@ export function useImage() {
     logoSize,
     loading,
     exifInfo,
+    exifBytes,
     loadImage,
     setPhotoImage: setPhotoImage1,
     setLogoImage: setLogoImage1,
@@ -182,6 +196,7 @@ export type UseImageWatermarkProps = {
   exifInfo: ExifInfo;
   filename: string;
   config: ConfigType;
+  exifBytes: number[];
 }
 
 const fileType: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', };
@@ -197,6 +212,7 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
     logoImage,
     canvas,
     exifInfo,
+    exifBytes,
     filename,
     config,
   } = props;
@@ -303,17 +319,29 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
     context.font = getTextFontStr(text);
     return context.measureText(getTextStr(text, exifInfo));
   }, [context, exifInfo]);
-  const downloadImage = useCallback((ext: string = 'jpg', quality: any | null = null) => {
+  const downloadImage = useCallback((ext: string = 'jpg', saveExif: boolean = true, quality: any | null = null) => {
     if (isNil(photoImage) || isNil(canvas) || isNil(context)) {
       return;
     }
     const name = filename.substring(0, filename.lastIndexOf('.'));
     startLoading();
     canvas.toBlob(blob => {
-      downloadBlob(blob!, `${name}-watermark.${ext}`);
-      stopLoading();
+      if (isNil(blob)) {
+        stopLoading();
+        return;
+      }
+      let promise: Promise<Blob | ArrayBuffer>;
+      if (saveExif) {
+        promise = insertEXIF(blob, exifBytes);
+      } else {
+        promise = Promise.resolve(blob);
+      }
+      promise.then(newBlob => {
+        downloadBlob(newBlob, `${name}-watermark.${ext}`);
+        stopLoading();
+      });
     }, fileType[ext], quality);
-  }, [filename, photoImage, canvas, context, startLoading, stopLoading]);
+  }, [filename, photoImage, canvas, context, startLoading, stopLoading, exifBytes]);
   const previewImage = useCallback(async (ext: string = 'jpg', quality: any | null = null) => {
     if (isNil(photoImage) || isNil(canvas) || isNil(context)) {
       return Promise.reject(new Error('未初始化'));
@@ -338,7 +366,7 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
 
   useEffect(() => {
     redoRender(config);
-  }, [photoImage, logoImage, config]);
+  }, [photoImage, logoImage, config, exifInfo]);
 
   useWhyDidYouUpdate('useImageWatermark', { config, logoImage, photoImage });
 

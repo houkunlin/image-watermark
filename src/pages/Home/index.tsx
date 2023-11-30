@@ -5,7 +5,7 @@ import logoSony from "@/assets/logo/Sony.svg";
 import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Button, Col, Image as RcImage, Row, Space, Spin, Upload } from 'antd';
+import { Alert, Button, Col, Flex, Image as RcImage, Row, Space, Spin, Upload } from 'antd';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
 import { BorderSize, ConfigType, LogoSize, SquareSize, TextConfig } from "./commons";
@@ -323,6 +323,7 @@ const HomePage: React.FC = () => {
     setPhotoImage,
     setLogoImage,
     exifInfo,
+    exifBytes,
     loading: loading1
   } = useImage();
   const {
@@ -330,7 +331,7 @@ const HomePage: React.FC = () => {
     downloadImage,
     previewImage,
     loading: loading2
-  } = useImageWatermark({ photoImage, logoImage, canvas: canvasRef.current, exifInfo, filename, config });
+  } = useImageWatermark({ photoImage, logoImage, canvas: canvasRef.current, exifInfo, filename, config, exifBytes });
 
   useEffect(() => {
     if (isNil(exifInfo)) {
@@ -384,43 +385,61 @@ const HomePage: React.FC = () => {
         }
         <ProCard ghost gutter={20}>
           <ProCard ghost>
-            <Space>
-              <Upload
-                listType="picture-card"
-                showUploadList={false}
-                onChange={(info: UploadChangeParam) => setPhotoImage(info.fileList[0])}
-                beforeUpload={() => false}
-                maxCount={1}
-              >
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>选择图片文件</div>
-                </div>
-              </Upload>
-              <Upload
-                listType="picture-card"
-                showUploadList={false}
-                onChange={(info: UploadChangeParam) => setLogoImage(info.fileList[0])}
-                beforeUpload={() => false}
-                maxCount={1}
-              >
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>选择LOGO文件</div>
-                </div>
-              </Upload>
-              <Space.Compact>
-                <Button onClick={() => downloadImage('jpg')} disabled={isNil(photoImage)}>
-                  <DownloadOutlined /> 保存图片 ( JPG )
-                </Button>
-                <Button onClick={() => downloadImage('png')} disabled={isNil(photoImage)}>
-                  <DownloadOutlined /> 保存图片 ( PNG )
-                </Button>
-                <Button onClick={() => previewImage('jpg').then(setImagePreviewSrc)} disabled={isNil(photoImage)}>
-                  预览图片（大图）
-                </Button>
-              </Space.Compact>
-            </Space>
+            <Flex>
+              <Flex>
+                <Space>
+                  <Upload
+                    listType="picture-card"
+                    showUploadList={false}
+                    onChange={(info: UploadChangeParam) => setPhotoImage(info.fileList[0])}
+                    beforeUpload={() => false}
+                    maxCount={1}
+                  >
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>选择图片文件</div>
+                    </div>
+                  </Upload>
+                  <Upload
+                    listType="picture-card"
+                    showUploadList={false}
+                    onChange={(info: UploadChangeParam) => setLogoImage(info.fileList[0])}
+                    beforeUpload={() => false}
+                    maxCount={1}
+                  >
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>选择LOGO文件</div>
+                    </div>
+                  </Upload>
+                </Space>
+              </Flex>
+              <Flex>
+                <Row>
+                  <Col span={24}>
+                    <Space.Compact>
+                      <Button onClick={() => downloadImage('jpg', true)} disabled={isNil(photoImage)}>
+                        <DownloadOutlined /> 保存图片 ( JPG ) [有 EXIF]
+                      </Button>
+                      <Button onClick={() => downloadImage('jpg', false)} disabled={isNil(photoImage)}>
+                        <DownloadOutlined /> 保存图片 ( JPG ) [无 EXIF]
+                      </Button>
+                    </Space.Compact>
+                  </Col>
+                  <Col span={24}>
+
+                    <Space.Compact>
+                      <Button onClick={() => downloadImage('png', false)} disabled={isNil(photoImage)}>
+                        <DownloadOutlined /> 保存图片 ( PNG )
+                      </Button>
+                      <Button onClick={() => previewImage('jpg').then(setImagePreviewSrc)} disabled={isNil(photoImage)}>
+                        预览图片（大图）
+                      </Button>
+                    </Space.Compact>
+                  </Col>
+                </Row>
+              </Flex>
+            </Flex>
             <RcImage
               src={''}
               style={{ display: 'none' }}
