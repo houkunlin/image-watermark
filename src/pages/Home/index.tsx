@@ -5,7 +5,7 @@ import logoSony from "@/assets/logo/Sony.svg";
 import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Button, Col, Row, Space, Spin, Upload } from 'antd';
+import { Alert, Button, Col, Image as RcImage, Row, Space, Spin, Upload } from 'antd';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { UploadChangeParam } from "antd/lib/upload/interface";
 import { BorderSize, ConfigType, LogoSize, SquareSize, TextConfig } from "./commons";
@@ -312,6 +312,7 @@ const HomePage: React.FC = () => {
   const [config, setConfig] = useState<ConfigType>({ ...defaultFormValue });
   const [selectLogo, setSelectLogo] = useState<CheckGroupValueType>(undefined);
   const [style, setStyle] = useState<CheckGroupValueType>(0);
+  const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>(undefined);
 
   const {
     filename,
@@ -327,6 +328,7 @@ const HomePage: React.FC = () => {
   const {
     canvasSize,
     downloadImage,
+    previewImage,
     loading: loading2
   } = useImageWatermark({ photoImage, logoImage, canvas: canvasRef.current, exifInfo, filename, config });
 
@@ -414,21 +416,30 @@ const HomePage: React.FC = () => {
                 <Button onClick={() => downloadImage('png')} disabled={isNil(photoImage)}>
                   <DownloadOutlined /> 保存图片 ( PNG )
                 </Button>
+                <Button onClick={() => previewImage('jpg').then(setImagePreviewSrc)} disabled={isNil(photoImage)}>
+                  预览图片（大图）
+                </Button>
               </Space.Compact>
             </Space>
-            {/*<RcImage
-          width={200}
-          style={{ display: 'none' }}
-          src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png?x-oss-process=image/blur,r_50,s_50/quality,q_1/resize,m_mfit,h_200,w_200"
-          preview={{
-            visible: true,
-            scaleStep: 1.0,
-            src: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-            onVisibleChange: (value) => {
-              // setVisible(value);
-            },
-          }}
-        />*/}
+            <RcImage
+              src={''}
+              style={{ display: 'none' }}
+              preview={{
+                visible: imagePreviewSrc !== undefined,
+                onVisibleChange: (visible) => {
+                  if (visible) {
+                    // previewImage('jpg').then(setImagePreviewSrc);
+                  } else {
+                    if (imagePreviewSrc?.startsWith('blob:')) {
+                      URL.revokeObjectURL(imagePreviewSrc);
+                    }
+                    setImagePreviewSrc(undefined);
+                  }
+                },
+                scaleStep: 1.0,
+                src: imagePreviewSrc,
+              }}
+            />
             <div className={styles.canvasBox}>
               <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: '100%' }}></canvas>
             </div>

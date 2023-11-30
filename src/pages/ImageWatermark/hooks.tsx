@@ -184,8 +184,11 @@ export type UseImageWatermarkProps = {
   config: ConfigType;
 }
 
+const fileType: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', };
+
 export function useImageWatermark(props: UseImageWatermarkProps) {
   const [loading, { setTrue: startLoading, setFalse: stopLoading }] = useBoolean(false);
+  const [loading1, setLoading1] = useState(false);
   const [canvasSize, setCanvasSize] = useState<SquareSize>({ height: 0, width: 0 });
   // const [borderSize, setBorderSize] = useState<BorderSize>({ bottom: 0, left: 0, right: 0, top: 0 });
 
@@ -306,12 +309,23 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
     }
     const name = filename.substring(0, filename.lastIndexOf('.'));
     startLoading();
-    const fileType: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', };
     canvas.toBlob(blob => {
       downloadBlob(blob!, `${name}-watermark.${ext}`);
       stopLoading();
     }, fileType[ext], quality);
   }, [filename, photoImage, canvas, context, startLoading, stopLoading]);
+  const previewImage = useCallback(async (ext: string = 'jpg', quality: any | null = null) => {
+    if (isNil(photoImage) || isNil(canvas) || isNil(context)) {
+      return Promise.reject(new Error('未初始化'));
+    }
+    startLoading();
+    return new Promise<string | undefined>(resolve => {
+      canvas.toBlob(blob => {
+        stopLoading();
+        resolve(isNil(blob) ? undefined : URL.createObjectURL(blob));
+      }, fileType[ext], quality);
+    });
+  }, [photoImage, canvas, context, startLoading, stopLoading]);
 
   const { run: redoRender } = useDebounceFn(async (theConfig: ConfigType) => {
     const start = new Date().getTime();
@@ -329,11 +343,12 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
   useWhyDidYouUpdate('useImageWatermark', { config, logoImage, photoImage });
 
   return {
-    loading,
+    loading: loading || loading1,
     canvasSize,
     // borderSize,
     measureText,
     redoRender,
     downloadImage,
+    previewImage,
   }
 }
