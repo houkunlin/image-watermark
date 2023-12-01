@@ -4,12 +4,9 @@ import {
   ConfigType,
   drawTextItems,
   ExifInfo,
-  getEXIF,
-  getExif,
-  getSegments,
+  getExifInfo,
   getTextFontStr,
   getTextStr,
-  insertEXIF,
   LogoSize,
   resetCanvas,
   SquareSize,
@@ -19,6 +16,7 @@ import type { UploadFile } from "antd";
 import { isNil } from "lodash";
 import { useBoolean, useDebounceFn, useMemoizedFn, useWhyDidYouUpdate } from "ahooks";
 import { downloadBlob } from "@/utils";
+import { getEXIF, getSegments, insertEXIF } from "@/pages/ImageWatermark/exif";
 
 type ImageType = string | HTMLImageElement | null | UploadFile;
 
@@ -163,7 +161,7 @@ export function useImage() {
       return;
     }
     startLoading();
-    getExif(photoImage).then(setExifInfo).finally(stopLoading);
+    getExifInfo(photoImage).then(setExifInfo).finally(stopLoading);
 
     if (photoImage.src.startsWith('blob:')) {
       fetch(photoImage.src)
