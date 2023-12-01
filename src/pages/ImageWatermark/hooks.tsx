@@ -317,7 +317,7 @@ export function useImageWatermark(props: UseImageWatermarkProps) {
     context.font = getTextFontStr(text);
     return context.measureText(getTextStr(text, exifInfo));
   }, [context, exifInfo]);
-  const downloadImage = useCallback((ext: string = 'jpg', saveExif: boolean = true, quality: any | null = null) => {
+  const downloadImage = useCallback((ext: 'jpg' | 'png' = 'jpg', saveExif: boolean = true, quality: any | null = null) => {
     if (isNil(photoImage) || isNil(canvas) || isNil(context)) {
       return;
     }

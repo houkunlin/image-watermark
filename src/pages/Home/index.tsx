@@ -5,15 +5,14 @@ import logoSony from "@/assets/logo/Sony.svg";
 import logoCanon from "@/assets/logo/Canon.svg";
 import logoNikon from "@/assets/logo/Nikon.svg";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Button, Col, Flex, Image as RcImage, Row, Space, Spin, Upload } from 'antd';
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
-import { UploadChangeParam } from "antd/lib/upload/interface";
+import { Alert, Col, Row, Spin } from 'antd';
 import { BorderSize, ConfigType, LogoSize, SquareSize, TextConfig } from "./commons";
 import { useImage, useImageWatermark } from "../ImageWatermark/hooks";
 import { isNil } from "lodash";
 import { CheckGroupValueType } from "@ant-design/pro-card/es/components/CheckCard/Group";
 import PhotoInfo from "@/pages/Home/PhotoInfo";
 import PhotoConfigForm from "@/pages/Home/PhotoConfigForm";
+import ActionButton from "@/pages/Home/ActionButton";
 
 const defaultText = new TextConfig({
   x: 100,
@@ -312,7 +311,6 @@ const HomePage: React.FC = () => {
   const [config, setConfig] = useState<ConfigType>({ ...defaultFormValue });
   const [selectLogo, setSelectLogo] = useState<CheckGroupValueType>(undefined);
   const [style, setStyle] = useState<CheckGroupValueType>(0);
-  const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>(undefined);
 
   const {
     filename,
@@ -372,6 +370,8 @@ const HomePage: React.FC = () => {
 
   const loading = useMemo(() => loading1 || loading2, [loading1, loading2]);
 
+  const disableBtn = useMemo(() => isNil(photoImage), [photoImage]);
+
   return (
     <PageContainer>
       <Spin spinning={loading}>
@@ -385,80 +385,12 @@ const HomePage: React.FC = () => {
         }
         <ProCard ghost gutter={20}>
           <ProCard ghost>
-            <Flex>
-              <Flex>
-                <Space>
-                  <Upload
-                    listType="picture-card"
-                    showUploadList={false}
-                    onChange={(info: UploadChangeParam) => setPhotoImage(info.fileList[0])}
-                    beforeUpload={() => false}
-                    maxCount={1}
-                  >
-                    <div>
-                      <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>选择图片文件</div>
-                    </div>
-                  </Upload>
-                  <Upload
-                    listType="picture-card"
-                    showUploadList={false}
-                    onChange={(info: UploadChangeParam) => setLogoImage(info.fileList[0])}
-                    beforeUpload={() => false}
-                    maxCount={1}
-                  >
-                    <div>
-                      <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>选择LOGO文件</div>
-                    </div>
-                  </Upload>
-                </Space>
-              </Flex>
-              <Flex>
-                <Row>
-                  <Col span={24}>
-                    <Space.Compact>
-                      <Button onClick={() => downloadImage('jpg', true)} disabled={isNil(photoImage)}>
-                        <DownloadOutlined /> 保存图片 ( JPG ) [有 EXIF]
-                      </Button>
-                      <Button onClick={() => downloadImage('jpg', false)} disabled={isNil(photoImage)}>
-                        <DownloadOutlined /> 保存图片 ( JPG ) [无 EXIF]
-                      </Button>
-                    </Space.Compact>
-                  </Col>
-                  <Col span={24}>
-
-                    <Space.Compact>
-                      <Button onClick={() => downloadImage('png', false)} disabled={isNil(photoImage)}>
-                        <DownloadOutlined /> 保存图片 ( PNG )
-                      </Button>
-                      <Button onClick={() => previewImage('jpg').then(setImagePreviewSrc)} disabled={isNil(photoImage)}>
-                        预览图片（大图）
-                      </Button>
-                    </Space.Compact>
-                  </Col>
-                </Row>
-              </Flex>
-            </Flex>
-            <RcImage
-              src={''}
-              style={{ display: 'none' }}
-              preview={{
-                visible: imagePreviewSrc !== undefined,
-                onVisibleChange: (visible) => {
-                  if (visible) {
-                    // previewImage('jpg').then(setImagePreviewSrc);
-                  } else {
-                    if (imagePreviewSrc?.startsWith('blob:')) {
-                      URL.revokeObjectURL(imagePreviewSrc);
-                    }
-                    setImagePreviewSrc(undefined);
-                  }
-                },
-                scaleStep: 0.2,
-                minScale: 0.5,
-                src: imagePreviewSrc,
-              }}
+            <ActionButton
+              onPhotoChange={setPhotoImage}
+              onLogoChange={setLogoImage}
+              onDownloadImage={downloadImage}
+              onPreviewImage={previewImage}
+              disabled={disableBtn}
             />
             <div className={styles.canvasBox}>
               <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: '100%' }}></canvas>
