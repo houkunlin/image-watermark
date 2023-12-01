@@ -209,7 +209,7 @@ const c2: ConfigTypeTemplate = {
 }
 
 function calcLogoSize(photoImageSize: SquareSize, logoImageSize: SquareSize, borderSize: BorderSize, logoSize: LogoSize, padding: number = 0.20): LogoSize {
-  // const bi = logoSize.height / logoSize.width;
+  /// const bi = logoSize.height / logoSize.width;
   const contentHeight = 1 - padding * 2;
 
   const logoHeight = photoImageSize.width * logoSize.height;
@@ -221,10 +221,10 @@ function calcLogoSize(photoImageSize: SquareSize, logoImageSize: SquareSize, bor
   const dy = Math.floor(borderSize.top + photoImageSize.height + logoHeight * padding);
 
   return {
-    height: newHeight,
-    width: newWidth,
-    x: dx,
-    y: dy,
+    height: newHeight || 0,
+    width: newWidth || 0,
+    x: dx || 0,
+    y: dy || 0,
   }
 }
 
